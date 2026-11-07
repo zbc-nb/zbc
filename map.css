@@ -183,3 +183,20 @@ tbody tr { cursor: pointer; }
 tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
 
 .notes { font-size: 12px; margin-top: 14px; max-width: 900px; }
+
+/* Your country, settings */
+.country.home { stroke: var(--accent); stroke-width: 2.5; }
+.country.home.selected { stroke: var(--highlight); }
+.tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.set-home { margin-top: 6px; width: 100%; font-weight: 600; color: var(--accent); }
+.small { font-size: 12px; margin-top: 12px; }
+tbody tr.home-row td { font-weight: 600; }

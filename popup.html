@@ -28,6 +28,7 @@
       </div>
     </div>
     <div class="muted"><span id="total-prompts">0</span> prompts · likely range <span id="total-range">0–0</span></div>
+    <div class="muted">CO₂ uses the power grid in <span id="grid-name">your country</span> · change it on the map</div>
 
     <label class="compare">
       <span>That's about the same as…</span>
@@ -41,7 +42,7 @@
 
   <section id="empty" class="card empty" hidden>
     <p>No AI usage in this period yet.</p>
-    <p class="muted">Chat on ChatGPT, Claude or Gemini and it appears here, or import your past chats below.</p>
+    <p class="muted">Chat on ChatGPT, Claude or Gemini and it appears here. Press <strong>Load data</strong> to pick up chats open in your tabs, or import your past chats.</p>
     <p class="muted" id="empty-older" hidden>You have older usage: pick <strong>All time</strong> at the top.</p>
   </section>
 
@@ -84,14 +85,16 @@
     </form>
   </details>
 
+  <button id="load-btn" class="load-btn">⟳ Load data</button>
+  <p id="load-status" class="load-status" aria-live="polite" hidden></p>
   <footer>
-    <button id="import-btn">Import my real chat history</button>
+    <button id="import-btn" class="secondary">Import past chat history</button>
     <button id="clear-btn" class="secondary danger">Clear data</button>
   </footer>
-  <button id="demo-btn" class="link">Load sample data (for presentations)</button>
   <p class="fine">Estimates only — see README for methodology. Your data never leaves this browser.</p>
 
   <script src="lib/constants.js"></script>
+  <script src="lib/grid-data.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

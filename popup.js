@@ -264,8 +264,19 @@ function renderSuggestions(week) {
   );
 }
 
+// CO₂ depends on the power grid. Use the country picked on the map, or a
+// guess from the browser's language, or a world-average grid.
+async function gridSetting() {
+  const { country } = await chrome.storage.local.get("country");
+  const c = PP.gridById.get(country ?? PP.guessCountryId());
+  return c ? { name: c.name, grid: c.grid } : { name: "an average country", grid: PP.DEFAULT_GRID_G_PER_KWH };
+}
+
 async function render() {
   const { events = [] } = await chrome.storage.local.get("events");
+  const { name, grid } = await gridSetting();
+  $("grid-name").textContent = name;
+  for (const e of events) e.gco2e = (e.wh / 1000) * grid;
   const now = Date.now();
   const { days } = currentPeriod();
   const current = days ? events.filter((e) => e.timestamp > now - days * DAY) : events;
@@ -307,9 +318,26 @@ $("import-btn").addEventListener("click", () => {
   chrome.tabs.create({ url: chrome.runtime.getURL("import.html") });
 });
 
-$("demo-btn").addEventListener("click", async () => {
-  if (!confirm("Add a week of made-up sample usage for presentations? It mixes with your real data until you clear it.")) return;
-  await chrome.runtime.sendMessage({ type: "load-demo" });
+// "Load data": read open ChatGPT / Claude / Gemini tabs for prompts that
+// weren't counted yet (e.g. sent before installing, or missed by tracking).
+$("load-btn").addEventListener("click", async () => {
+  const btn = $("load-btn");
+  const status = $("load-status");
+  btn.disabled = true;
+  btn.textContent = "Loading…";
+  try {
+    const res = await chrome.runtime.sendMessage({ type: "load-recent" });
+    if (!res?.ok) throw new Error(res?.error ?? "unknown error");
+    status.textContent = !res.tabs
+      ? "No ChatGPT, Claude or Gemini tabs are open. Open your chats in tabs, then press Load data."
+      : `Checked ${res.tabsRead} of ${res.tabs} AI tab${res.tabs === 1 ? "" : "s"}: ` +
+        `${res.found} prompt${res.found === 1 ? "" : "s"} on screen, ${res.added} new added.`;
+  } catch (e) {
+    status.textContent = `Couldn't load data: ${e.message}`;
+  }
+  status.hidden = false;
+  btn.disabled = false;
+  btn.textContent = "⟳ Load data";
   render();
 });
 
@@ -332,7 +360,7 @@ $("manual-form").addEventListener("submit", async (e) => {
 
 // Update live if new usage is tracked while the popup is open.
 chrome.storage.onChanged.addListener((changes) => {
-  if (changes.events) render();
+  if (changes.events || changes.country) render();
 });
 
 setupEquivalentSelect();

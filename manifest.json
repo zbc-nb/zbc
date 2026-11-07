@@ -2,9 +2,9 @@
   "manifest_version": 3,
   "name": "PromptPrint – AI Carbon Tracker",
   "short_name": "PromptPrint",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Tracks your AI chatbot usage, estimates its carbon footprint, and suggests lower-impact alternatives.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "scripting"],
   "host_permissions": [
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",

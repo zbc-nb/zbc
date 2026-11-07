@@ -161,15 +161,8 @@ button.danger { color: var(--danger); }
 footer { display: flex; gap: 8px; }
 footer button { flex: 1; }
 footer #import-btn { flex: 1.6; }
-button.link {
-  display: block;
-  margin: 8px auto 0;
-  background: none;
-  border: 0;
-  padding: 2px;
-  color: var(--muted);
-  font-weight: 500;
-  font-size: 12px;
-  text-decoration: underline;
-}
+.load-btn { width: 100%; margin-bottom: 6px; padding: 9px 10px; }
+.load-btn:disabled { opacity: 0.6; cursor: wait; }
+.load-status { margin: 0 0 8px; font-size: 12px; color: var(--muted); text-align: center; }
 .fine { color: var(--muted); font-size: 11px; text-align: center; margin: 8px 0 0; }
+.axis[hidden] { display: none; }
