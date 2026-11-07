@@ -17,7 +17,8 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 
 ## Plant, budget & themes
 - **Your plant** reflects the last 7 days against a weekly CO₂ budget: thriving under 80%, needs care up to 100%, wilting over. The budget starts as your recent weekly average (marked "suggested"); set your own with **Change budget**. The streak counts full days in a row under a day's share of the budget. **Habits that help** is a checklist of pledges saved in the browser.
-- **Themes:** the palette button in the popup header opens 15 themes (Default plus 14 styles: skeuomorphic, flat, material, neumorphism, glass, clay, liquid glass, neo-brutalism, minimal, Bauhaus, retrofuturism, brutalism, anti-design, acid). Themes live in `lib/themes.css` (one block of variables each) and `lib/theme.js` (list, fonts, saving). The map and import pages keep the default look.
+- **Which AI you use** shows the split by prompts, CO₂ or electricity (they differ because each AI uses a different amount of energy per prompt), with each AI's exact numbers, its average energy per prompt, and whether that energy figure is **published** by the company or **our estimate**. "How is this calculated?" explains the method.
+- **Themes:** Material design is the default look (light and dark; the map and import pages match). The palette button in the popup header opens 15 themes (Material, Classic, plus 13 more styles: skeuomorphic, flat, neumorphism, glass, clay, liquid glass, neo-brutalism, minimal, Bauhaus, retrofuturism, brutalism, anti-design, acid). Themes live in `lib/themes.css` (one block of variables each) and `lib/theme.js` (list, fonts, saving). Themes apply to the popup; the map and import pages use Material.
 
 ![All themes](docs/theme-demos.png)
 

@@ -85,6 +85,38 @@
 :root[data-theme="material"] button { letter-spacing: 0.1px; transition: box-shadow 0.2s; }
 :root[data-theme="material"] button:hover { box-shadow: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3); }
 
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="material"] {
+    --bg: #11140f;
+    --card: #1d211a;
+    --text: #e2e3dc;
+    --muted: #c3c8bb;
+    --accent: #9fd581;
+    --accent-soft: #23361a;
+    --border: #43483f;
+    --track: #2c3128;
+    --good: #9fd581;
+    --bad: #ffb68a;
+    --danger: #ffb4ab;
+    --btn-text: #0c3900;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 4px 8px 3px rgba(0,0,0,0.25);
+    --btn2-border: 1px solid #8d9286;
+    --input-bg: #1d211a;
+    --input-border: 1px solid #8d9286;
+  }
+}
+/* Material type scale and touch targets */
+:root[data-theme="material"] body { padding: 14px; }
+:root[data-theme="material"] h1 { font-size: 18px; font-weight: 500; }
+:root[data-theme="material"] h2 { font-size: 14px; font-weight: 500; letter-spacing: 0.1px; }
+:root[data-theme="material"] .big { font-weight: 400; font-size: 28px; }
+:root[data-theme="material"] .card { padding: 16px; margin-bottom: 12px; }
+:root[data-theme="material"] .map-btn, :root[data-theme="material"] .load-btn { min-height: 40px; }
+:root[data-theme="material"] .segmented { border-color: #74796d; }
+:root[data-theme="material"] .segmented label + label span { border-left-color: #74796d; }
+:root[data-theme="material"] .segmented span { padding: 7px 14px; font-weight: 500; }
+:root[data-theme="material"] .theme-option { border-radius: 12px; }
+
 /* ============ 4. Neumorphism: soft extruded surfaces ============ */
 :root[data-theme="neumorph"] {
   --bg: #e0e5ec;

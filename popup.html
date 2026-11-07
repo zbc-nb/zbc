@@ -85,15 +85,28 @@
   <section id="charts">
     <div class="card">
       <h2>Which AI you use</h2>
-      <div class="pie-row">
-        <div id="pie" class="pie" role="img" aria-label="Share of prompts by AI"></div>
-        <ul id="pie-legend" class="legend"></ul>
+      <div class="segmented" role="radiogroup" aria-label="Measure the split by">
+        <label><input type="radio" name="site-measure" value="prompts" checked><span>Prompts</span></label>
+        <label><input type="radio" name="site-measure" value="gco2e"><span>CO₂</span></label>
+        <label><input type="radio" name="site-measure" value="wh"><span>Electricity</span></label>
       </div>
+      <div id="site-stack" class="site-stack" role="img"></div>
+      <table class="site-table">
+        <thead><tr><th scope="col">AI</th><th scope="col" class="num" id="site-col">Prompts</th><th scope="col" class="num">Share</th></tr></thead>
+        <tbody id="site-rows"></tbody>
+      </table>
+      <p id="site-note" class="muted site-note"></p>
+      <details class="how">
+        <summary>How is this calculated?</summary>
+        <p>Each prompt's electricity = the AI's energy per typical prompt × how long its reply was (longer replies use more). CO₂ = electricity × how much CO₂ your country's power grid emits per kWh.</p>
+        <p>Only Google (Gemini) and OpenAI (ChatGPT) publish per-prompt energy figures. Every other AI uses our estimate of 0.3 Wh per prompt, marked "estimate" above. All numbers are approximate: the true value is likely between half and double.</p>
+      </details>
     </div>
 
     <div class="card">
       <h2>What you use it for</h2>
       <div id="category-bars"></div>
+      <p id="category-note" class="muted site-note" hidden>"Other" means the prompt didn't match any task keywords (like "solve" for Math or "python" for Coding), so its task is unknown.</p>
     </div>
 
     <div class="card">

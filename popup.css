@@ -140,6 +140,44 @@ h2 { font-size: 13px; margin: 0 0 8px; font-family: var(--heading-font); }
 .legend .pct { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); }
 .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 
+/* ---------- Which AI you use ---------- */
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.segmented label { position: relative; }
+.segmented input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.segmented span {
+  display: block;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.segmented label + label span { border-left: 1px solid var(--border); }
+.segmented input:checked + span { background: var(--accent-soft); color: var(--text); }
+.segmented input:checked + span::before { content: "✓ "; }
+.segmented input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -2px; }
+.site-stack { display: flex; gap: 2px; height: 14px; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+.site-stack span { display: block; height: 100%; }
+.site-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.site-table th { text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); padding: 4px 0; border-bottom: 1px solid var(--border); }
+.site-table td { padding: 7px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.site-table tr:last-child td { border-bottom: 0; }
+.site-table .num { text-align: right; padding-left: 8px; white-space: nowrap; }
+.site-table .strong { font-weight: 700; }
+.site-name { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.site-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.chip { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+.chip.published { color: var(--good); border-color: currentColor; }
+.site-note { margin: 8px 0 0; font-size: 11px; }
+.how { margin-top: 8px; font-size: 12px; }
+.how p { margin: 6px 0 0; color: var(--muted); }
+.how summary { font-size: 12px; color: var(--accent); }
+
 /* ---------- Category bars ---------- */
 .bar-row { margin-bottom: 7px; }
 .bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 2px; }

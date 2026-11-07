@@ -115,29 +115,73 @@ function renderEquivalent() {
   );
 }
 
-function renderPie(week) {
-  const bySite = groupBy(week, "site");
-  const total = week.length;
-  let angle = 0;
-  const stops = [];
-  const legend = $("pie-legend");
-  legend.replaceChildren();
+// ---------- Which AI you use: a transparent breakdown ----------
+// The split can be measured by prompts, CO₂ or electricity. They differ
+// because each AI uses a different amount of energy per prompt and replies
+// vary in length, so the table shows the numbers behind every share.
 
-  for (const [site, info] of Object.entries(SITE_INFO)) {
-    const count = bySite[site]?.length ?? 0;
-    if (!count) continue;
-    const share = count / total;
-    stops.push(`${info.color} ${angle}turn ${angle + share}turn`);
-    angle += share;
-    legend.append(
-      el("li", {},
-        el("span", { className: "swatch", style: { background: info.color } }),
-        info.name,
-        el("span", { className: "pct" }, `${count.toLocaleString()} · ${PP.fmtPct(share)}`)
-      )
-    );
-  }
-  $("pie").style.background = stops.length ? `conic-gradient(${stops.join(", ")})` : "";
+let siteMeasure = "prompts";
+let lastSiteEvents = [];
+const MEASURES = {
+  prompts: { label: "Prompts", value: (evs) => evs.length, fmt: (n) => n.toLocaleString() },
+  gco2e: { label: "CO₂e", value: (evs) => sum(evs, (e) => e.gco2e), fmt: (g) => PP.fmtGrams(g) },
+  wh: { label: "Electricity", value: (evs) => sum(evs, (e) => e.wh), fmt: (wh) => PP.fmtWh(wh) },
+};
+
+function renderSites(events) {
+  lastSiteEvents = events;
+  const m = MEASURES[siteMeasure];
+  const bySite = groupBy(events, "site");
+  const rows = Object.entries(bySite)
+    .map(([site, evs]) => ({ site, evs, value: m.value(evs) }))
+    .sort((a, b) => b.value - a.value);
+  const total = rows.reduce((n, r) => n + r.value, 0) || 1;
+
+  // Stacked bar: tiny shares get a minimum width so they stay visible.
+  $("site-stack").replaceChildren(
+    ...rows.map((r) =>
+      el("span", {
+        title: `${SITE_INFO[r.site].name}: ${PP.fmtPct(r.value / total)}`,
+        style: { flexGrow: String(r.value), flexBasis: "0", minWidth: "4px", background: SITE_INFO[r.site].color },
+      })
+    )
+  );
+  $("site-stack").setAttribute("aria-label",
+    `Share by ${m.label.toLowerCase()}: ` + rows.map((r) => `${SITE_INFO[r.site].name} ${PP.fmtPct(r.value / total)}`).join(", "));
+
+  $("site-col").textContent = m.label;
+  $("site-rows").replaceChildren(
+    ...rows.map((r) => {
+      const info = PP.SITES[r.site];
+      const whPerPrompt = sum(r.evs, (e) => e.wh) / r.evs.length;
+      const detail = r.site === "other"
+        ? `${r.evs.length.toLocaleString()} prompts across several smaller AIs`
+        : `${r.evs.length.toLocaleString()} prompt${r.evs.length === 1 ? "" : "s"} · ${PP.fmtWh(whPerPrompt)} each on average`;
+      return el("tr", {},
+        el("td", {},
+          el("div", { className: "site-name" },
+            el("span", { className: "swatch", style: { background: SITE_INFO[r.site].color } }),
+            SITE_INFO[r.site].name,
+            ...(info ? [el("span", { className: info.published ? "chip published" : "chip estimate", title: info.source }, info.published ? "published" : "estimate")] : [])
+          ),
+          el("div", { className: "site-detail" }, detail)
+        ),
+        el("td", { className: "num" }, m.fmt(r.value)),
+        el("td", { className: "num strong" }, PP.fmtPct(r.value / total))
+      );
+    })
+  );
+
+  $("site-note").textContent = siteMeasure === "prompts"
+    ? "Very small shares are drawn a little wider so you can see them. The table has the exact numbers."
+    : `Shares by ${m.label.toLowerCase()} differ from shares by prompts because each AI uses a different amount of energy per prompt, and longer replies use more.`;
+}
+
+for (const radio of document.querySelectorAll('input[name="site-measure"]')) {
+  radio.addEventListener("change", () => {
+    siteMeasure = radio.value;
+    renderSites(lastSiteEvents);
+  });
 }
 
 function renderCategories(week) {
@@ -145,6 +189,8 @@ function renderCategories(week) {
   const max = byCat[0]?.[1].length ?? 1;
   const box = $("category-bars");
   box.replaceChildren();
+  const otherShare = (groupBy(week, "category").Other?.length ?? 0) / (week.length || 1);
+  $("category-note").hidden = otherShare < 0.5;
 
   for (const [category, events] of byCat) {
     const bySite = groupBy(events, "site");
@@ -159,10 +205,10 @@ function renderCategories(week) {
       }
     }
     box.append(
-      el("div", { className: "bar-row" },
+      el("div", { className: "bar-row", title: category === "Other" ? "Prompts that didn't match any task keywords" : "" },
         el("div", { className: "bar-label" },
           el("span", {}, category),
-          el("span", {}, `${events.length} · ${fmt(sum(events, (e) => e.gco2e))} g`)
+          el("span", {}, `${events.length.toLocaleString()} · ${PP.fmtPct(events.length / week.length)} · ${PP.fmtGrams(sum(events, (e) => e.gco2e))}`)
         ),
         track
       )
@@ -303,7 +349,7 @@ async function render() {
 
   renderTotals(current, previous);
   const shown = foldSites(current);
-  renderPie(shown);
+  renderSites(shown);
   renderCategories(shown);
   renderTimeline(current);
   renderSuggestions(shown);
