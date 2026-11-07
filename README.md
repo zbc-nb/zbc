@@ -11,7 +11,7 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 - **Import past history:** reads the chat exports from ChatGPT, Claude and Google Takeout (Gemini) to show your footprint from before you installed it.
 - **Totals:** estimated emissions (with a likely range), prompts and tokens, electricity, and a cooling-water scenario, for Today, This week, This month or All time.
 - **Everyday comparisons:** driving, LED bulb, phone charges, streaming, water bottles, trees and more.
-- **How does your usage compare?** Your daily average as "example chats per day" against a reference (2, 10 or 30 chats/day), with **a plant** that thrives well below the reference, goes pale above it and wilts past double. **Habits that help** is a checklist under it.
+- **How does your usage compare?** Your prompts per day against the average ChatGPT user (about 3.7 a day, from OpenAI's research), with **a plant** that thrives well below average, goes pale above it and wilts past double. **What does this mean for the environment?** turns your use into yearly CO₂, climate-damage cost, cooling water and electricity. **Habits that help** is a checklist under it.
 - **Which AI you use:** the split by prompts, CO₂ or electricity, with each AI's exact numbers, average energy per prompt, and whether that figure is **published** or **our estimate**.
 - **What you use it for:** task categories (Math, Coding, Writing, Research, Brainstorm, Other) with percentages, plus **Suggestions** for lower-impact alternatives.
 - **World map:** what your usage would emit on each country's power grid.
@@ -92,6 +92,8 @@ g CO₂e    = energy_Wh ÷ 1000 × grid intensity (g CO₂e per kWh)
 | Grid carbon intensity | 400 g CO₂e/kWh | Approximate US average (EPA eGRID) |
 | Displayed range | 0.5× to 2× the estimate | Reflects uncertainty in all of the above |
 | Phone charge / mile driven | 12.4 g / 400 g CO₂ | EPA Greenhouse Gas Equivalencies Calculator |
+| Average AI use | ≈ 3.7 prompts/day per user | OpenAI / NBER, Chatterji et al., *How People Use ChatGPT* (working paper w34255, Sept 2025): ~18 billion messages a week from ~700 million weekly users (July 2025) |
+| Climate damage | ≈ $190 per tonne CO₂ | US EPA, social cost of carbon (2023 update, 2% discount rate) |
 
 All values can be changed at the top of `background.js` and `popup.js`. Verify each source before presenting.
 

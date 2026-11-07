@@ -74,26 +74,20 @@
   </section>
 
   <section class="panel benchmark" aria-labelledby="bench-title">
-    <div class="eyebrow">A reference, not a ranking</div>
+    <div class="eyebrow">Compared with the average ChatGPT user</div>
     <h2 id="bench-title">How does your usage compare?</h2>
-    <p class="sub">Your daily average across the selected dates, including days with no recorded usage.</p>
-
-    <label class="field-label" for="reference">Choose a daily reference</label>
-    <select id="reference">
-      <option value="2">2 example chats / day</option>
-      <option value="10" selected>10 example chats / day</option>
-      <option value="30">30 example chats / day</option>
-    </select>
+    <p class="sub">Your daily average across the selected dates, including days with no recorded use.</p>
 
     <div class="bench-result" aria-live="polite">
       <span id="bench-status" class="chip">No usage recorded</span>
-      <div class="bench-number"><strong id="bench-daily">0</strong><small>example chats / day</small></div>
+      <div class="bench-number"><strong id="bench-daily">0</strong><small>prompts / day</small></div>
       <p id="bench-diff" class="muted">Start tracking or import history to compare.</p>
       <div class="bench-track" id="bench-track" role="img">
         <div class="r-low"></div><div class="r-mid"></div><div class="r-high"></div>
         <i id="bench-marker"></i>
       </div>
-      <div class="bench-scale"><span>Below</span><span>1× reference</span><span>2×+</span></div>
+      <div class="bench-scale"><span>0</span><span>Average: <span id="bench-avg">3.7</span> / day</span><span>2×+</span></div>
+      <p class="source">Average from OpenAI's study <cite>How People Use ChatGPT</cite> (NBER working paper, Sept 2025): about 18 billion messages a week from about 700 million weekly users, so about 26 a week or 3.7 a day per user.</p>
     </div>
 
     <div class="plant-row">
@@ -112,8 +106,9 @@
     </details>
 
     <details class="bench-note">
-      <summary>What does this mean?</summary>
-      <p>One example chat = one prompt with a typical reply (about 0.3 Wh). These references are scenarios, not measured averages of other people. More AI use generally means more energy, emissions and water; being below a reference doesn't mean "no impact".</p>
+      <summary>What does this mean for the environment?</summary>
+      <ul id="damage" class="damage"></ul>
+      <p class="source">Climate damage uses the US EPA's social cost of carbon (about $190 per tonne of CO₂, 2023 estimate): the future harm from extra CO₂, such as heat, floods, crop losses and health costs. All figures are estimates; the true values are likely between half and double.</p>
     </details>
   </section>
 

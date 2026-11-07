@@ -140,8 +140,8 @@ function renderEquivalent() {
 }
 
 // ---------- How does your usage compare? (with the plant) ----------
-// Daily electricity is turned into "example chats per day" (one prompt with a
-// typical reply ≈ 0.3 Wh) and compared with the chosen reference.
+// Your daily prompts are compared with the average user's, and the plant
+// reacts to the difference.
 
 function plantSvg(stage) {
   const pot = `<ellipse cx="75" cy="141" rx="44" ry="5" style="fill:var(--track)"/>
@@ -182,34 +182,41 @@ function plantSvg(stage) {
 
 const PLANT_TEXT = {
   seed: ["Plant a seed", "No usage recorded in this period yet."],
-  thriving: ["Your plant is thriving", "You're well below this reference. Keep it up."],
-  okay: ["Your plant is doing fine", "You're around this reference."],
-  pale: ["Your plant looks pale", "You're above this reference. A habit below can help it recover."],
-  wilting: ["Your plant is struggling", "You're more than double this reference. Try a habit below."],
+  thriving: ["Your plant is thriving", "You use AI well below the average user. Keep it up."],
+  okay: ["Your plant is doing fine", "You use AI about as much as the average user."],
+  pale: ["Your plant looks pale", "You use AI more than the average user. A habit below can help it recover."],
+  wilting: ["Your plant is struggling", "You use AI more than twice as much as the average user. Try a habit below."],
 };
 
+// Your prompts per day, compared with the average ChatGPT user's (from
+// OpenAI's research; see PP.AVERAGE_USER in lib/constants.js).
 async function renderBenchmark(events, start) {
   const days = Math.max(1, Math.round((dayStart(Date.now()) - start) / DAY) + 1);
-  const ref = Number($("reference").value);
-  const dailyChats = sum(events, (e) => e.wh) / days / PP.WH_PER_EXAMPLE_CHAT;
-  const ratio = dailyChats / ref;
+  const avg = PP.AVERAGE_USER.promptsPerDay;
+  const daily = events.length / days;
+  const ratio = daily / avg;
 
-  const status = !events.length ? "No usage recorded" : ratio < 0.9 ? "Below this reference" : ratio > 1.1 ? "Above this reference" : "Close to this reference";
-  $("bench-status").textContent = status;
-  $("bench-daily").textContent = PP.fmtNum(dailyChats);
+  $("bench-avg").textContent = PP.fmtNum(avg);
+  $("bench-status").textContent = !events.length ? "No usage recorded" : ratio < 0.9 ? "Below average" : ratio > 1.1 ? "Above average" : "About average";
+  $("bench-daily").textContent = PP.fmtNum(daily);
   const diff = Math.abs(ratio - 1) * 100;
+  const over = `over ${days} day${days === 1 ? "" : "s"}`;
   $("bench-diff").textContent = !events.length
     ? "No recorded use in this period. Start tracking or import history."
-    : diff < 1
-      ? "Matches the selected reference."
-      : `${PP.fmtNum(diff)}% ${ratio < 1 ? "less" : "more"} than ${ref} chats/day, averaged over ${days} day${days === 1 ? "" : "s"}.`;
+    : diff < 5
+      ? `About the same as the average user (${PP.fmtNum(avg)} prompts a day).`
+      : ratio >= 2
+        ? `${PP.fmtNum(ratio)}× the average user (${PP.fmtNum(avg)} prompts a day), ${over}.`
+        : `${PP.fmtNum(diff)}% ${ratio < 1 ? "less" : "more"} than the average user (${PP.fmtNum(avg)} prompts a day), ${over}.`;
   $("bench-marker").style.left = `${Math.min(100, ratio * 50)}%`;
-  $("bench-track").setAttribute("aria-label", `${PP.fmtPct(Math.min(ratio, 9.99))} of the daily reference. The scale ends at twice the reference.`);
+  $("bench-track").setAttribute("aria-label", `${PP.fmtPct(Math.min(ratio, 9.99))} of the average user's daily prompts. The scale ends at twice the average.`);
 
   const stage = !events.length ? "seed" : ratio < 0.6 ? "thriving" : ratio <= 1.1 ? "okay" : ratio <= 2 ? "pale" : "wilting";
   $("plant").innerHTML = plantSvg(stage);
   $("plant-title").textContent = PLANT_TEXT[stage][0];
   $("plant-text").textContent = PLANT_TEXT[stage][1];
+
+  renderDamage(events, days);
 
   const { habits = {} } = await chrome.storage.local.get("habits");
   let done = 0;
@@ -218,6 +225,46 @@ async function renderBenchmark(events, start) {
     if (box.checked) done++;
   }
   $("habit-count").textContent = done;
+}
+
+// "What does this mean for the environment?": the period's impact, what it
+// adds up to over a year at this pace, and the climate damage it causes.
+function renderDamage(events, days) {
+  const list = $("damage");
+  if (!events.length) {
+    list.replaceChildren(el("li", {}, "Once you've used AI in this period, this shows how much it adds to climate change, water use and electricity demand."));
+    return;
+  }
+  const g = sum(events, (e) => e.gco2e);
+  const wh = sum(events, (e) => e.wh);
+  const perYear = 365 / days;
+  const yearG = g * perYear;
+  const yearWh = wh * perYear;
+  const damageUsd = (yearG / 1e6) * PP.SOCIAL_COST_USD_PER_TONNE;
+  const usd = (v) => (v < 0.01 ? "less than 1¢" : v < 1 ? `${Math.round(v * 100)}¢` : `$${v.toFixed(2)}`);
+
+  // The average user, at your energy per prompt and grid, so the difference
+  // is only how much AI is used.
+  const gPerPrompt = g / events.length;
+  const avgYearG = PP.AVERAGE_USER.promptsPerDay * 365 * gPerPrompt;
+  // Rounded to 2 significant figures: it's a rough, scale-up estimate.
+  const globalT = Number(((PP.AVERAGE_USER.messagesPerWeek * 52 * gPerPrompt) / 1e6).toPrecision(2));
+  const driving = PP.EQUIVALENTS.find((e) => e.id === "driving");
+  const vsAvg = yearG >= avgYearG ? `${PP.fmtNum(yearG / avgYearG)}× the` : `${PP.fmtPct(yearG / avgYearG)} of the`;
+
+  const item = (title, detail) => el("li", {}, el("strong", {}, title), el("span", { className: "muted" }, detail));
+  list.replaceChildren(
+    item(`Climate: ≈ ${PP.fmtGrams(g)} CO₂e ${RANGES[currentRange()]}.`,
+      `At this pace, ≈ ${PP.fmtGrams(yearG)} a year, like ${driving.describe(yearG)}. That causes about ${usd(damageUsd)} of future climate damage each year.`),
+    item(`Compared with others: ${vsAvg} average user's CO₂.`,
+      `An average user (${PP.fmtNum(PP.AVERAGE_USER.promptsPerDay)} prompts a day) adds ≈ ${PP.fmtGrams(avgYearG)} a year at the same energy per prompt.`),
+    item(`Water: ≈ ${PP.fmtNum(waterLiters(yearWh))} L of cooling water a year at this pace.`,
+      "Data centers draw this from local supplies, which matters most where water is already scarce."),
+    item(`Electricity: ≈ ${PP.fmtWh(yearWh)} a year.`,
+      "Growing data-center demand keeps more fossil-fuel power plants running, especially on carbon-heavy grids."),
+    item(`All ChatGPT users together: ≈ ${PP.fmtNum(globalT)} tonnes of CO₂e a year.`,
+      "That's ~18 billion messages a week at your energy per prompt. One person's share is small; the damage comes from everyone's use added up.")
+  );
 }
 
 // ---------- Which AI you use: a transparent breakdown ----------
@@ -447,10 +494,6 @@ for (const r of document.querySelectorAll('input[name="range"]')) {
   });
 }
 
-$("reference").addEventListener("change", () => {
-  chrome.storage.local.set({ reference: $("reference").value });
-  render();
-});
 
 for (const box of document.querySelectorAll("[data-habit]")) {
   box.addEventListener("change", async () => {
@@ -525,9 +568,8 @@ chrome.permissions.onRemoved.addListener(async () => { await loadGranted(); rend
 // ---------- Start ----------
 (async function init() {
   setupEquivalentSelect();
-  const { range, reference, equivChoice, waterRate } = await chrome.storage.local.get(["range", "reference", "equivChoice", "waterRate"]);
+  const { range, equivChoice, waterRate } = await chrome.storage.local.get(["range", "equivChoice", "waterRate"]);
   if (range) for (const r of document.querySelectorAll('input[name="range"]')) r.checked = r.value === range;
-  if (reference && $("reference").querySelector(`option[value="${reference}"]`)) $("reference").value = reference;
   if (equivChoice && PP.EQUIVALENTS.some((eq) => eq.id === equivChoice)) $("equiv-select").value = equivChoice;
   if (Number.isFinite(waterRate)) $("water-rate").value = waterRate;
   await loadGranted();
