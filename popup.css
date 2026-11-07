@@ -1,0 +1,160 @@
+:root {
+  --bg: #f4f7f5;
+  --card: #ffffff;
+  --text: #1c2b22;
+  --muted: #5f6f66;
+  --accent: #16804f;
+  --accent-soft: #e3f3ea;
+  --border: #dde5e0;
+  --danger: #b42318;
+  --good: #16804f;
+  --bad: #b54708;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121815;
+    --card: #1b2420;
+    --text: #e6eee9;
+    --muted: #9aaba1;
+    --accent: #4cc38a;
+    --accent-soft: #1f3a2d;
+    --border: #2b3732;
+    --danger: #f97066;
+    --good: #4cc38a;
+    --bad: #fdb022;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  width: 370px;
+  margin: 0;
+  padding: 12px;
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+h1 { font-size: 16px; margin: 0; }
+.period { margin-left: auto; color: var(--muted); font-size: 12px; }
+h2 { font-size: 13px; margin: 0 0 8px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.total { background: var(--accent-soft); border-color: transparent; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+.big { font-size: 24px; font-weight: 700; color: var(--accent); line-height: 1.15; }
+.muted { color: var(--muted); font-size: 12px; }
+.compare { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: 12px; font-weight: 600; }
+.compare select { width: 100%; }
+.equiv { margin-top: 6px; font-size: 14px; font-weight: 600; }
+.map-btn { width: 100%; margin-bottom: 10px; padding: 9px 10px; }
+.change { margin-top: 4px; font-size: 12px; font-weight: 600; }
+.change.good { color: var(--good); }
+.change.bad { color: var(--bad); }
+
+.empty p { margin: 0 0 4px; }
+
+/* Pie chart (drawn with a CSS conic-gradient) */
+.pie-row { display: flex; align-items: center; gap: 14px; }
+.pie {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--border);
+}
+.legend { list-style: none; margin: 0; padding: 0; flex: 1; }
+.legend li { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+.legend .pct { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); }
+.swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+/* Category bars */
+.bar-row { margin-bottom: 7px; }
+.bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 2px; }
+.bar-label span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar-track {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--border);
+}
+.bar-track span { display: block; height: 100%; }
+.bar-track span + span { border-left: 2px solid var(--card); }
+
+/* Daily emissions column chart */
+.daily {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 90px;
+}
+.day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.day .col {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+}
+.day .lbl { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+/* Suggestions */
+.suggestions { list-style: none; margin: 0; padding: 0; }
+.suggestions li { padding: 8px 0; border-top: 1px solid var(--border); }
+.suggestions li:first-child { border-top: 0; padding-top: 0; }
+.suggestions strong { display: block; margin-bottom: 3px; }
+.suggestions .alts { color: var(--muted); }
+.suggestions .save { color: var(--accent); font-size: 12px; margin-top: 3px; }
+
+/* Forms & buttons */
+summary { cursor: pointer; font-weight: 600; }
+form { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+select, textarea {
+  font: inherit;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+button.secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+button.danger { color: var(--danger); }
+footer { display: flex; gap: 8px; }
+footer button { flex: 1; }
+.fine { color: var(--muted); font-size: 11px; text-align: center; margin: 8px 0 0; }

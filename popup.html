@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PromptPrint</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="assets/icon32.png" alt="" width="24" height="24">
+    <h1>PromptPrint</h1>
+    <span class="period">Last 7 days</span>
+  </header>
+
+  <section class="card total">
+    <div class="stats">
+      <div>
+        <div class="big" id="total-g">0 g</div>
+        <div class="muted">CO₂e emitted</div>
+      </div>
+      <div>
+        <div class="big" id="total-wh">0 Wh</div>
+        <div class="muted">electricity used</div>
+      </div>
+    </div>
+    <div class="muted"><span id="total-prompts">0</span> prompts · likely range <span id="total-range">0–0</span></div>
+
+    <label class="compare">
+      <span>That's about the same as…</span>
+      <select id="equiv-select" aria-label="Compare your AI footprint to"></select>
+    </label>
+    <div id="equivalent" class="equiv" aria-live="polite"></div>
+    <div id="change" class="change"></div>
+  </section>
+
+  <button id="map-btn" class="map-btn">🌍 Open the world map</button>
+
+  <section id="empty" class="card empty" hidden>
+    <p>No AI usage tracked yet.</p>
+    <p class="muted">Chat on ChatGPT, Claude or Gemini, or load demo data below.</p>
+  </section>
+
+  <section id="charts">
+    <div class="card">
+      <h2>Which AI you use</h2>
+      <div class="pie-row">
+        <div id="pie" class="pie" role="img" aria-label="Share of prompts by AI"></div>
+        <ul id="pie-legend" class="legend"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>What you use it for</h2>
+      <div id="category-bars"></div>
+    </div>
+
+    <div class="card">
+      <h2>Daily emissions</h2>
+      <div id="daily-bars" class="daily"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Suggestions</h2>
+    <ul id="suggestions" class="suggestions"></ul>
+  </section>
+
+  <details class="card">
+    <summary>Log a prompt manually</summary>
+    <form id="manual-form">
+      <select id="manual-site">
+        <option value="chatgpt">ChatGPT</option>
+        <option value="claude">Claude</option>
+        <option value="gemini">Gemini</option>
+      </select>
+      <textarea id="manual-text" rows="2" placeholder="What did you ask? (only the category is saved)" required></textarea>
+      <button type="submit">Log it</button>
+    </form>
+  </details>
+
+  <footer>
+    <button id="demo-btn" class="secondary">Load demo data</button>
+    <button id="clear-btn" class="secondary danger">Clear data</button>
+  </footer>
+  <p class="fine">Estimates only — see README for methodology. Your data never leaves this browser.</p>
+
+  <script src="lib/constants.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

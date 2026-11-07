@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PromptPrint World Map</title>
+  <link rel="icon" href="assets/icon32.png">
+  <link rel="stylesheet" href="map.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="assets/icon32.png" alt="" width="28" height="28">
+      <div>
+        <h1>AI's footprint around the world</h1>
+        <p class="muted">Weekly AI use by PromptPrint users, by country</p>
+      </div>
+    </div>
+    <div class="controls">
+      <label>
+        <span>Color the map by</span>
+        <select id="metric">
+          <option value="gco2e">CO₂ emissions</option>
+          <option value="wh">Electricity used</option>
+          <option value="perUser">CO₂ per user</option>
+          <option value="prompts">Number of prompts</option>
+          <option value="grid">Grid carbon intensity</option>
+        </select>
+      </label>
+      <span class="badge" id="sample-badge" title="Invented user numbers for demonstration">Sample data</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="map-card" aria-label="World map">
+      <div class="map-wrap" id="map-wrap">
+        <svg id="map" role="img" aria-label="World map colored by the selected measure. Click a country for details."></svg>
+        <div class="zoom">
+          <button id="zoom-in" aria-label="Zoom in">+</button>
+          <button id="zoom-out" aria-label="Zoom out">−</button>
+          <button id="zoom-reset" aria-label="Reset view">⟲</button>
+        </div>
+        <div id="tooltip" class="tooltip" hidden></div>
+      </div>
+      <div class="legend" id="legend" aria-label="Map legend"></div>
+      <p class="hint muted">Drag to move · scroll or use + / − to zoom · click a country for details</p>
+    </section>
+
+    <aside class="panel" id="panel" aria-live="polite">
+      <div id="panel-empty">
+        <h2>World overview</h2>
+        <div class="tiles" id="world-tiles"></div>
+        <p class="muted">Click any colored country to see its AI use, electricity, emissions and what people there use AI for.</p>
+      </div>
+      <div id="panel-country" hidden></div>
+    </aside>
+  </main>
+
+  <section class="card table-card">
+    <div class="table-head">
+      <h2>Country ranking</h2>
+      <span class="muted" id="table-metric-label"></span>
+    </div>
+    <div class="table-scroll">
+      <table id="ranking">
+        <thead>
+          <tr><th>#</th><th>Country</th><th class="num">Users</th><th class="num">Prompts/week</th><th class="num">Electricity/week</th><th class="num">CO₂/week</th><th class="num">CO₂ per user</th><th>Top use</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="notes muted">
+    <p><strong>About this data:</strong> user numbers are sample data for the demo. Emissions use each country's average grid carbon intensity (approximate, Ember / Our World in Data 2023). This is a simplification: in reality, emissions depend on where the data center answering the prompt is, not where the user is.</p>
+  </footer>
+
+  <script src="lib/d3.min.js"></script>
+  <script src="lib/topojson-client.min.js"></script>
+  <script src="lib/constants.js"></script>
+  <script src="community-data.js"></script>
+  <script src="map.js"></script>
+</body>
+</html>

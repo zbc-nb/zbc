@@ -1,0 +1,19 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Packaged extension builds
+*.zip
+*.crx
+*.pem
+
+# Dependencies (if added later)
+node_modules/
+
+# Local secrets
+.env
