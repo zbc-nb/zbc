@@ -307,6 +307,7 @@ function renderSites(events) {
         el("td", {},
           el("div", { className: "site-name" },
             el("span", { className: "swatch", style: { background: SITE_INFO[r.site].color } }),
+            ...(PP.SITES[r.site] ? [PP.siteIcon(r.site, 18)] : []),
             SITE_INFO[r.site].name,
             ...(info ? [el("span", { className: info.published ? "tag published" : "tag", title: info.source }, info.published ? "published" : "estimate")] : [])
           ),
@@ -390,10 +391,20 @@ function renderSuggestions(events) {
 }
 
 // ---------- Connected platforms ----------
-const isLight = (hex) => {
-  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55;
-};
+// The section can be collapsed; collapsed, it shows the connected AIs' icons.
+let platformsOpen = true;
+
+function applyPlatformsOpen() {
+  $("plat-toggle").setAttribute("aria-expanded", String(platformsOpen));
+  $("plat-body").hidden = !platformsOpen;
+  $("plat-mini").hidden = platformsOpen;
+}
+
+$("plat-toggle").addEventListener("click", () => {
+  platformsOpen = !platformsOpen;
+  chrome.storage.local.set({ platformsOpen });
+  applyPlatformsOpen();
+});
 
 async function loadGranted() {
   const { origins = [] } = await chrome.permissions.getAll();
@@ -406,6 +417,15 @@ function renderPlatforms(events) {
   const connected = sites.filter(siteConnected);
   $("connected-count").textContent = `${connected.length} of ${sites.length} connected`;
   $("connect-banner").hidden = connected.length > 0;
+  $("plat-mini").replaceChildren(
+    ...(connected.length
+      ? connected.map((site) => {
+          const icon = PP.siteIcon(site, 24);
+          icon.title = `${PP.SITES[site].name}: tracking on`;
+          return icon;
+        })
+      : [el("span", {}, "No platforms connected. Open to switch one on.")])
+  );
 
   const bySite = groupBy(events, "site");
   $("platform-rows").replaceChildren(
@@ -413,7 +433,6 @@ function renderPlatforms(events) {
       const info = PP.SITES[site];
       const evs = bySite[site] ?? [];
       const on = siteConnected(site);
-      const color = PP.siteColor(site);
       const toggle = el("button", {
         className: "switch",
         role: "switch",
@@ -423,10 +442,10 @@ function renderPlatforms(events) {
       });
       toggle.addEventListener("click", () => toggleSite(site, toggle));
       return el("div", { className: "platform-row" },
-        el("span", { className: "site-badge", style: { background: color, color: isLight(color) ? "#1d1d1b" : "#ffffff" }, "aria-hidden": "true" }, info.name[0]),
+        PP.siteIcon(site, 30),
         el("div", { className: "platform-info" },
           el("strong", {}, info.name),
-          el("small", {}, on ? `${info.hosts[0]} · ${evs.length.toLocaleString()} prompts · ${PP.fmtGrams(sum(evs, (e) => e.gco2e))}` : `${info.hosts[0]} · not tracked`)
+          el("small", {}, on ? `${info.hosts[0]} · ${evs.length.toLocaleString()} prompt${evs.length === 1 ? "" : "s"} · ${PP.fmtGrams(sum(evs, (e) => e.gco2e))}` : `${info.hosts[0]} · not tracked`)
         ),
         toggle
       );
@@ -568,7 +587,9 @@ chrome.permissions.onRemoved.addListener(async () => { await loadGranted(); rend
 // ---------- Start ----------
 (async function init() {
   setupEquivalentSelect();
-  const { range, equivChoice, waterRate } = await chrome.storage.local.get(["range", "equivChoice", "waterRate"]);
+  const { range, equivChoice, waterRate, platformsOpen: open } = await chrome.storage.local.get(["range", "equivChoice", "waterRate", "platformsOpen"]);
+  if (typeof open === "boolean") platformsOpen = open;
+  applyPlatformsOpen();
   if (range) for (const r of document.querySelectorAll('input[name="range"]')) r.checked = r.value === range;
   if (equivChoice && PP.EQUIVALENTS.some((eq) => eq.id === equivChoice)) $("equiv-select").value = equivChoice;
   if (Number.isFinite(waterRate)) $("water-rate").value = waterRate;

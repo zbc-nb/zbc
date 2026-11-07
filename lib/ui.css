@@ -195,3 +195,7 @@ option { color: #293c33; background: #ffffff; }
 
 details > summary { cursor: pointer; font-size: 12px; color: var(--sage-text); font-weight: 600; }
 details p { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+
+/* Real site icon (from Chrome's favicon cache) shown inside the badge */
+.site-badge.has-icon { background: #ffffff; border: 1px solid var(--border); }
+.site-badge img { display: block; }

@@ -15,6 +15,8 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 - **Which AI you use:** the split by prompts, CO₂ or electricity, with each AI's exact numbers, average energy per prompt, and whether that figure is **published** or **our estimate**.
 - **What you use it for:** task categories (Math, Coding, Writing, Research, Brainstorm, Other) with percentages, plus **Suggestions** for lower-impact alternatives.
 - **World map:** what your usage would emit on each country's power grid.
+- **AI icons:** each platform shows its real site icon from Chrome's own icon cache (the `favicon` permission, no network request). Sites you haven't visited yet show a colored letter badge until you do.
+- **Collapsible platforms list:** click **Your connected platforms** to collapse it to a row of the connected AIs' icons; PromptPrint remembers your choice.
 - **Private:** everything stays in your browser. Prompt text is never saved; only the category and lengths are.
 
 ![The popup](docs/popup.png)
@@ -49,6 +51,7 @@ After changing code, click the reload button on the extension's card in `chrome:
 |---|---|
 | `manifest.json` | Chrome's configuration: AI sites are *optional* permissions, granted per site by the user |
 | `welcome.html` / `welcome.css` / `welcome.js` | First-run page that explains what's tracked and asks permission per AI platform |
+| `lib/icons.js` | AI platform icons from Chrome's favicon cache, with letter-badge fallback |
 | `lib/ui.css` | Shared design tokens and components (colors, fonts, panels, buttons, switches) |
 | `content.js` | Runs on the AI sites. Spots each prompt you send and measures the reply length |
 | `background.js` | Registers the tracker only for allowed sites, categorizes prompts, estimates energy and carbon, saves events without duplicates, runs **Load data** |

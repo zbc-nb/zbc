@@ -10,11 +10,6 @@ async function granted() {
   return new Set(origins);
 }
 
-const isLight = (hex) => {
-  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55;
-};
-
 async function renderList() {
   const have = await granted();
   const list = $("site-list");
@@ -30,13 +25,7 @@ async function renderList() {
     box.value = id;
     box.checked = isOn || (!have.size && DEFAULT_TICKED.includes(id));
 
-    const badge = document.createElement("span");
-    badge.className = "site-badge";
-    badge.setAttribute("aria-hidden", "true");
-    const color = PP.siteColor(id);
-    badge.style.background = color;
-    badge.style.color = isLight(color) ? "#1d1d1b" : "#ffffff";
-    badge.textContent = site.name[0];
+    const badge = PP.siteIcon(id, 32);
 
     const text = document.createElement("span");
     const name = document.createElement("strong");

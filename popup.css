@@ -210,3 +210,30 @@ dialog input { width: 110px; }
 .damage li:first-child { border-top: 0; }
 .damage strong { color: var(--heading); }
 .damage .muted { display: block; font-size: 11px; margin-top: 2px; }
+
+/* Collapsible "Your connected platforms" */
+.toggle-heading { margin: 0; }
+.panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--heading);
+}
+.panel-toggle #plat-title { flex: 1; }
+.panel-toggle .chip { font-family: var(--font); letter-spacing: 0; }
+.chevron { flex-shrink: 0; color: var(--muted); transition: transform 0.15s; }
+.panel-toggle[aria-expanded="false"] .chevron { transform: rotate(-90deg); }
+@media (prefers-reduced-motion: reduce) { .chevron { transition: none; } }
+#plat-body { margin-top: 2px; }
+.plat-mini { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: 11px; color: var(--muted); }
+.site-table .site-badge { border-radius: 4px; }

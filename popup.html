@@ -145,15 +145,19 @@
   </section>
 
   <section class="panel platforms" aria-labelledby="plat-title">
-    <div class="panel-head">
-      <div>
-        <h2 id="plat-title">Your connected platforms</h2>
-        <p class="sub">You choose where to track. Switch off anytime.</p>
-      </div>
-      <span class="chip" id="connected-count"></span>
+    <h2 class="toggle-heading">
+      <button id="plat-toggle" class="panel-toggle" aria-expanded="true" aria-controls="plat-body">
+        <span id="plat-title">Your connected platforms</span>
+        <span class="chip" id="connected-count"></span>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+    </h2>
+    <div id="plat-mini" class="plat-mini" hidden></div>
+    <div id="plat-body">
+      <p class="sub">You choose where to track. Switch off anytime.</p>
+      <div id="platform-rows"></div>
+      <p class="note platform-foot">Only lengths and task categories are kept. Your chat text is never saved.</p>
     </div>
-    <div id="platform-rows"></div>
-    <p class="note platform-foot">Only lengths and task categories are kept. Your chat text is never saved.</p>
   </section>
 
   <details class="panel manual">
@@ -193,6 +197,7 @@
 
   <script src="lib/constants.js"></script>
   <script src="lib/grid-data.js"></script>
+  <script src="lib/icons.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
