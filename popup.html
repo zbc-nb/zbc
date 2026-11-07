@@ -3,140 +3,198 @@
 <head>
   <meta charset="utf-8">
   <title>PromptPrint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap">
+  <link rel="stylesheet" href="lib/ui.css">
   <link rel="stylesheet" href="popup.css">
-  <link rel="stylesheet" href="lib/themes.css">
-  <script src="lib/theme.js"></script>
 </head>
 <body>
-  <header>
-    <img src="assets/icon32.png" alt="" width="24" height="24">
-    <h1>PromptPrint</h1>
-    <select id="period" class="period" aria-label="Time period">
-      <option value="7">Last 7 days</option>
-      <option value="30">Last 30 days</option>
-      <option value="all">All time</option>
-    </select>
-    <button id="theme-btn" class="secondary theme-btn" aria-expanded="false" aria-controls="theme-menu">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r="1.5"></circle><circle cx="17.5" cy="10.5" r="1.5"></circle><circle cx="8.5" cy="7.5" r="1.5"></circle><circle cx="6.5" cy="12.5" r="1.5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.56-2.5 5.56-5.55C21.96 6.01 17.46 2 12 2Z"></path></svg>
-    </button>
+  <header class="topbar">
+    <span class="brand">promptprint<span class="brand-dot">.</span></span>
+    <span class="stored"><span class="status-dot" aria-hidden="true"></span>Stored locally</span>
   </header>
 
-  <section id="theme-menu" class="card theme-menu" hidden>
-    <h2>Theme <span class="muted">Current: <strong id="theme-name">Default</strong></span></h2>
-    <div id="theme-grid" class="theme-grid" role="radiogroup" aria-label="Choose a theme"></div>
-  </section>
-
-  <section class="card total">
-    <div class="stats">
-      <div>
-        <div class="big" id="total-g">0 g</div>
-        <div class="muted">CO₂e emitted</div>
-      </div>
-      <div>
-        <div class="big" id="total-wh">0 Wh</div>
-        <div class="muted">electricity used</div>
-      </div>
+  <section class="page-heading">
+    <div>
+      <h1>Your AI footprint<span class="brand-dot">.</span></h1>
+      <p>Your usage, with a little perspective.</p>
     </div>
-    <div class="muted"><span id="total-prompts">0</span> prompts · likely range <span id="total-range">0–0</span></div>
-    <div class="muted">CO₂ uses the power grid in <span id="grid-name">your country</span> · change it on the map</div>
-
-    <label class="compare">
-      <span>That's about the same as…</span>
-      <select id="equiv-select" aria-label="Compare your AI footprint to"></select>
-    </label>
-    <div id="equivalent" class="equiv" aria-live="polite"></div>
-    <div id="change" class="change"></div>
+    <button id="map-btn" class="btn outline small">World map <span aria-hidden="true">↗</span></button>
   </section>
 
-  <section id="garden" class="card garden" aria-labelledby="plant-title">
-    <div class="garden-row">
+  <section id="connect-banner" class="connect-banner" hidden>
+    <strong>Tracking is off.</strong>
+    <span>Choose which AI platforms PromptPrint may read.</span>
+    <button id="connect-btn" class="btn">Connect platforms</button>
+  </section>
+
+  <div class="tabs" role="radiogroup" aria-label="Date range">
+    <label><input type="radio" name="range" value="today"><span>Today</span></label>
+    <label><input type="radio" name="range" value="week" checked><span>This week</span></label>
+    <label><input type="radio" name="range" value="month"><span>This month</span></label>
+    <label><input type="radio" name="range" value="all"><span>All time</span></label>
+  </div>
+  <p class="date-range" id="date-range"></p>
+
+  <section class="metrics" aria-label="Totals for this period">
+    <article class="metric primary">
+      <div class="metric-label">Estimated emissions</div>
+      <div class="metric-number"><span id="m-co2">0</span><small id="m-co2-unit">g CO₂e</small></div>
+      <div class="metric-foot" id="m-co2-foot">Likely range shown in About</div>
+      <svg class="leaf-art" viewBox="0 0 120 130" fill="none" aria-hidden="true"><path d="M25 119C30 78 74 68 105 15C114 87 74 121 25 119Z" stroke="currentColor"/><path d="M19 130C48 95 71 65 105 15M45 100L39 70M62 79L89 77M79 54L76 35" stroke="currentColor"/></svg>
+    </article>
+    <article class="metric">
+      <div class="metric-label">Prompts · tokens</div>
+      <div class="metric-number"><span id="m-prompts">0</span><small>prompts</small></div>
+      <div class="metric-foot"><span id="m-tokens">0</span> tokens processed</div>
+    </article>
+    <article class="metric">
+      <div class="metric-label">Energy used</div>
+      <div class="metric-number"><span id="m-wh">0</span><small id="m-wh-unit">Wh</small></div>
+      <div class="metric-foot">Estimated electricity</div>
+    </article>
+    <article class="metric water">
+      <div class="metric-label">Cooling water</div>
+      <div class="metric-number"><span id="m-water">0</span><small id="m-water-unit">mL</small></div>
+      <div class="metric-foot">Scenario · <span id="water-rate-label">1.8</span> L/kWh</div>
+    </article>
+  </section>
+
+  <section class="perspective">
+    <div class="eyebrow">Make the numbers feel familiar</div>
+    <h2>Your impact, in everyday terms.</h2>
+    <label for="equiv-select">Compare with</label>
+    <select id="equiv-select"></select>
+    <div class="divider"></div>
+    <div class="equiv-row" aria-live="polite">
+      <span class="approx" aria-hidden="true">≈</span>
+      <div><strong id="equiv-value">—</strong><p id="equiv-desc"></p></div>
+    </div>
+    <p class="note">Illustrative comparison, not a measured equivalent or an offset.</p>
+  </section>
+
+  <section class="panel benchmark" aria-labelledby="bench-title">
+    <div class="eyebrow">A reference, not a ranking</div>
+    <h2 id="bench-title">How does your usage compare?</h2>
+    <p class="sub">Your daily average across the selected dates, including days with no recorded usage.</p>
+
+    <label class="field-label" for="reference">Choose a daily reference</label>
+    <select id="reference">
+      <option value="2">2 example chats / day</option>
+      <option value="10" selected>10 example chats / day</option>
+      <option value="30">30 example chats / day</option>
+    </select>
+
+    <div class="bench-result" aria-live="polite">
+      <span id="bench-status" class="chip">No usage recorded</span>
+      <div class="bench-number"><strong id="bench-daily">0</strong><small>example chats / day</small></div>
+      <p id="bench-diff" class="muted">Start tracking or import history to compare.</p>
+      <div class="bench-track" id="bench-track" role="img">
+        <div class="r-low"></div><div class="r-mid"></div><div class="r-high"></div>
+        <i id="bench-marker"></i>
+      </div>
+      <div class="bench-scale"><span>Below</span><span>1× reference</span><span>2×+</span></div>
+    </div>
+
+    <div class="plant-row">
       <div id="plant" class="plant"></div>
-      <div class="garden-info">
+      <div>
         <strong id="plant-title">Your plant</strong>
-        <span id="plant-text" class="muted"></span>
-        <div class="budget-track" role="img" id="budget-bar"><span id="budget-fill" class="budget-fill"></span></div>
-        <div class="garden-meta">
-          <span id="streak" class="streak"></span>
-          <button id="budget-edit" class="link" aria-expanded="false" aria-controls="budget-form">Change budget</button>
-        </div>
-        <form id="budget-form" class="budget-form" hidden>
-          <label for="budget-input" class="muted">Weekly g CO₂e</label>
-          <input id="budget-input" type="number" min="1" step="1" required>
-          <button type="submit">Save</button>
-        </form>
+        <p id="plant-text" class="muted"></p>
       </div>
     </div>
+
     <details class="habits">
       <summary>Habits that help (<span id="habit-count">0</span>/3)</summary>
       <label class="habit"><input type="checkbox" data-habit="search"> Search the web first for quick facts</label>
-      <label class="habit"><input type="checkbox" data-habit="detail"> Ask once, in detail <span class="hint">fewer follow-ups</span></label>
+      <label class="habit"><input type="checkbox" data-habit="detail"> Ask once, in detail <span class="muted">fewer follow-ups</span></label>
       <label class="habit"><input type="checkbox" data-habit="small"> Use a smaller model for easy questions</label>
+    </details>
+
+    <details class="bench-note">
+      <summary>What does this mean?</summary>
+      <p>One example chat = one prompt with a typical reply (about 0.3 Wh). These references are scenarios, not measured averages of other people. More AI use generally means more energy, emissions and water; being below a reference doesn't mean "no impact".</p>
     </details>
   </section>
 
-  <button id="map-btn" class="map-btn">🌍 Open the world map</button>
-
-  <section id="empty" class="card empty" hidden>
-    <p>No AI usage in this period yet.</p>
-    <p class="muted">Chat on ChatGPT, Claude, Gemini, Perplexity, Copilot, DeepSeek, Grok or Mistral and it appears here. Press <strong>Load data</strong> to pick up chats open in your tabs, or import your past chats.</p>
-    <p class="muted" id="empty-older" hidden>You have older usage: pick <strong>All time</strong> at the top.</p>
+  <section class="panel" aria-labelledby="ai-title">
+    <h2 id="ai-title">Which AI you use</h2>
+    <p class="sub">Measure the split by prompts, CO₂ or electricity.</p>
+    <div class="segmented" role="radiogroup" aria-label="Measure the split by">
+      <label><input type="radio" name="site-measure" value="prompts" checked><span>Prompts</span></label>
+      <label><input type="radio" name="site-measure" value="gco2e"><span>CO₂</span></label>
+      <label><input type="radio" name="site-measure" value="wh"><span>Electricity</span></label>
+    </div>
+    <div id="site-stack" class="site-stack" role="img"></div>
+    <table class="site-table">
+      <thead><tr><th scope="col">AI</th><th scope="col" class="num" id="site-col">Prompts</th><th scope="col" class="num">Share</th></tr></thead>
+      <tbody id="site-rows"></tbody>
+    </table>
+    <p id="site-note" class="note"></p>
+    <details>
+      <summary>How is this calculated?</summary>
+      <p>Each prompt's electricity = the AI's energy per typical prompt × how long its reply was (longer replies use more). CO₂ = electricity × how much CO₂ your country's power grid emits per kWh.</p>
+      <p>Only Google (Gemini) and OpenAI (ChatGPT) publish per-prompt energy figures. Every other AI uses our estimate of 0.3 Wh per prompt, marked "estimate". All numbers are approximate: the true value is likely between half and double.</p>
+    </details>
   </section>
 
-  <section id="charts">
-    <div class="card">
-      <h2>Which AI you use</h2>
-      <div class="segmented" role="radiogroup" aria-label="Measure the split by">
-        <label><input type="radio" name="site-measure" value="prompts" checked><span>Prompts</span></label>
-        <label><input type="radio" name="site-measure" value="gco2e"><span>CO₂</span></label>
-        <label><input type="radio" name="site-measure" value="wh"><span>Electricity</span></label>
-      </div>
-      <div id="site-stack" class="site-stack" role="img"></div>
-      <table class="site-table">
-        <thead><tr><th scope="col">AI</th><th scope="col" class="num" id="site-col">Prompts</th><th scope="col" class="num">Share</th></tr></thead>
-        <tbody id="site-rows"></tbody>
-      </table>
-      <p id="site-note" class="muted site-note"></p>
-      <details class="how">
-        <summary>How is this calculated?</summary>
-        <p>Each prompt's electricity = the AI's energy per typical prompt × how long its reply was (longer replies use more). CO₂ = electricity × how much CO₂ your country's power grid emits per kWh.</p>
-        <p>Only Google (Gemini) and OpenAI (ChatGPT) publish per-prompt energy figures. Every other AI uses our estimate of 0.3 Wh per prompt, marked "estimate" above. All numbers are approximate: the true value is likely between half and double.</p>
-      </details>
-    </div>
-
-    <div class="card">
-      <h2>What you use it for</h2>
-      <div id="category-bars"></div>
-      <p id="category-note" class="muted site-note" hidden>"Other" means the prompt didn't match any task keywords (like "solve" for Math or "python" for Coding), so its task is unknown.</p>
-    </div>
-
-    <div class="card">
-      <h2 id="timeline-title">Daily emissions</h2>
-      <div id="daily-bars" class="daily"></div>
-      <div id="timeline-axis" class="axis" hidden></div>
-    </div>
+  <section class="panel" aria-labelledby="task-title">
+    <h2 id="task-title">What you use it for</h2>
+    <div id="category-bars"></div>
+    <p id="category-note" class="note" hidden>"Other" means the prompt didn't match any task keywords (like "solve" for Math or "python" for Coding), so its task is unknown.</p>
   </section>
 
-  <section class="card">
-    <h2>Suggestions</h2>
+  <section class="panel" aria-labelledby="tips-title">
+    <h2 id="tips-title">Suggestions</h2>
     <ul id="suggestions" class="suggestions"></ul>
   </section>
 
-  <details class="card">
+  <section class="panel platforms" aria-labelledby="plat-title">
+    <div class="panel-head">
+      <div>
+        <h2 id="plat-title">Your connected platforms</h2>
+        <p class="sub">You choose where to track. Switch off anytime.</p>
+      </div>
+      <span class="chip" id="connected-count"></span>
+    </div>
+    <div id="platform-rows"></div>
+    <p class="note platform-foot">Only lengths and task categories are kept. Your chat text is never saved.</p>
+  </section>
+
+  <details class="panel manual">
     <summary>Log a prompt manually</summary>
     <form id="manual-form">
       <select id="manual-site" aria-label="Which AI"></select>
       <textarea id="manual-text" rows="2" placeholder="What did you ask? (only the category is saved)" required></textarea>
-      <button type="submit">Log it</button>
+      <button type="submit" class="btn">Log it</button>
     </form>
   </details>
 
-  <button id="load-btn" class="load-btn">⟳ Load data</button>
-  <p id="load-status" class="load-status" aria-live="polite" hidden></p>
-  <footer>
-    <button id="import-btn" class="secondary">Import past chat history</button>
-    <button id="clear-btn" class="secondary danger">Clear data</button>
+  <div class="actions">
+    <button id="load-btn" class="btn">⟳ Load data</button>
+    <p id="load-status" class="load-status" aria-live="polite" hidden></p>
+    <div class="action-row">
+      <button id="import-btn" class="btn outline">Import past chat history</button>
+      <button id="clear-btn" class="btn danger">Clear data</button>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <span>Made for a little more awareness, not a little more worry.</span>
+    <button id="about-btn" class="linkish">About these estimates ↗</button>
   </footer>
-  <p class="fine">Estimates only — see README for methodology. Your data never leaves this browser.</p>
+
+  <dialog id="about" aria-labelledby="about-title">
+    <button class="close" data-close aria-label="Close">×</button>
+    <h2 id="about-title">An estimate, with perspective.</h2>
+    <p>Each prompt's energy comes from the AI's energy per typical prompt (0.24–0.34 Wh where published, 0.3 Wh otherwise), scaled by reply length. Tokens ≈ characters ÷ 4.</p>
+    <p>Emissions use the power grid of <strong id="about-grid">your country</strong> (change it on the World map). The likely range for this period is <strong id="about-range">—</strong>.</p>
+    <h3>Water is a scenario estimate</h3>
+    <p>Cooling water = energy (kWh) × the cooling-water rate below. The default 1.8 L/kWh is illustrative, not a provider measurement, and excludes water used to generate electricity, train models or make hardware.</p>
+    <label class="field-label" for="water-rate">Cooling-water assumption (L/kWh)</label>
+    <input id="water-rate" type="number" min="0" max="100" step="0.1" value="1.8">
+    <p id="water-status" class="note" role="status"></p>
+  </dialog>
 
   <script src="lib/constants.js"></script>
   <script src="lib/grid-data.js"></script>

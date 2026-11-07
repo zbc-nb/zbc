@@ -1,23 +1,13 @@
-// popup.js — draws the summary, charts and suggestions when you click the
-// extension icon. Reads the events saved by background.js.
+// popup.js: fills in the popup from the usage saved by background.js.
+// Sections: totals, everyday comparison, "How does your usage compare?" with
+// the plant, Which AI you use, tasks, suggestions, connected platforms,
+// manual log, and the Load / Import / Clear actions.
 
 // Names, colors, comparisons and number formatting come from lib/constants.js
 const SITE_INFO = Object.fromEntries(
   Object.entries(PP.SITES).map(([id, s]) => [id, { name: s.name, color: PP.siteColor(id) }])
 );
 SITE_INFO.other = { name: "Other AIs", color: PP.siteColor("other") };
-
-// Charts stay readable with at most 5 AIs: smaller ones are grouped as "Other AIs".
-// Each AI keeps its own color whatever its rank.
-const MAX_SITES_SHOWN = 5;
-function foldSites(events) {
-  const counts = {};
-  for (const e of events) counts[e.site] = (counts[e.site] ?? 0) + 1;
-  const ranked = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-  if (ranked.length <= MAX_SITES_SHOWN) return events;
-  const keep = new Set(ranked.slice(0, MAX_SITES_SHOWN - 1));
-  return events.map((e) => (keep.has(e.site) ? e : { ...e, site: "other" }));
-}
 
 // Lower-impact alternatives for each kind of task.
 const ALTERNATIVES = {
@@ -29,21 +19,10 @@ const ALTERNATIVES = {
 };
 
 const DAY = 24 * 60 * 60 * 1000;
-const UNCERTAINTY = PP.UNCERTAINTY; // shown as a range in the UI
-
 const $ = (id) => document.getElementById(id);
 const sum = (arr, f) => arr.reduce((n, x) => n + f(x), 0);
-const fmt = (g) => PP.fmtNum(g);
 
-let weekTotals = { g: 0, wh: 0, count: 0 };
-
-// Time periods for the dropdown in the header.
-const PERIODS = {
-  "7": { days: 7, name: "this week", prev: "the week before" },
-  "30": { days: 30, name: "these 30 days", prev: "the 30 days before" },
-  all: { days: null, name: "in total", prev: null },
-};
-const currentPeriod = () => PERIODS[$("period").value] ?? PERIODS["7"];
+const state = { events: [], current: [], grid: null, waterRate: PP.DEFAULT_WATER_L_PER_KWH, granted: new Set() };
 
 function groupBy(arr, key) {
   const out = {};
@@ -55,71 +34,193 @@ function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
     if (k === "style") Object.assign(node.style, v);
+    else if (k.startsWith("aria-") || k === "role") node.setAttribute(k, v);
     else node[k] = v;
   }
   node.append(...children);
   return node;
 }
 
-// ---------- Rendering ----------
-
-function renderTotals(week, lastWeek) {
-  const g = sum(week, (e) => e.gco2e);
-  const wh = sum(week, (e) => e.wh);
-  weekTotals = { g, wh, count: week.length };
-
-  $("total-g").textContent = PP.fmtGrams(g);
-  $("total-wh").textContent = PP.fmtWh(wh);
-  $("total-range").textContent =
-    `${PP.fmtGrams(g * UNCERTAINTY.low)}–${PP.fmtGrams(g * UNCERTAINTY.high)} CO₂e`;
-  $("total-prompts").textContent = week.length.toLocaleString();
-  renderEquivalent();
-
-  const prev = sum(lastWeek, (e) => e.gco2e);
-  const change = $("change");
-  change.className = "change";
-  if (prev > 0 && week.length) {
-    const pct = ((g - prev) / prev) * 100;
-    change.textContent = `${pct <= 0 ? "▼" : "▲"} ${Math.abs(pct).toFixed(0)}% vs. ${currentPeriod().prev}`;
-    change.classList.add(pct <= 0 ? "good" : "bad");
-  } else {
-    change.textContent = "";
-  }
+// Charts stay readable with at most 5 AIs: smaller ones are grouped as "Other AIs".
+const MAX_SITES_SHOWN = 5;
+function foldSites(events) {
+  const counts = {};
+  for (const e of events) counts[e.site] = (counts[e.site] ?? 0) + 1;
+  const ranked = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  if (ranked.length <= MAX_SITES_SHOWN) return events;
+  const keep = new Set(ranked.slice(0, MAX_SITES_SHOWN - 1));
+  return events.map((e) => (keep.has(e.site) ? e : { ...e, site: "other" }));
 }
 
-// The "That's about the same as…" dropdown.
+// ---------- Date range ----------
+const RANGES = {
+  today: "today",
+  week: "this week",
+  month: "this month",
+  all: "in total",
+};
+const currentRange = () => document.querySelector('input[name="range"]:checked')?.value ?? "week";
+
+function dayStart(t) {
+  const d = new Date(t);
+  d.setHours(0, 0, 0, 0);
+  return +d;
+}
+
+function rangeStart(range, events) {
+  const today = new Date(dayStart(Date.now()));
+  if (range === "today") return +today;
+  if (range === "week") return +new Date(today.getFullYear(), today.getMonth(), today.getDate() - ((today.getDay() + 6) % 7));
+  if (range === "month") return +new Date(today.getFullYear(), today.getMonth(), 1);
+  return events.length ? dayStart(Math.min(...events.map((e) => e.timestamp))) : +today;
+}
+
+// ---------- Unit helpers (number and unit shown separately) ----------
+const splitGrams = (g) => (g >= 1000 ? [PP.fmtNum(g / 1000), "kg CO₂e"] : [PP.fmtNum(g), "g CO₂e"]);
+const splitWh = (wh) => (wh >= 1000 ? [PP.fmtNum(wh / 1000), "kWh"] : [PP.fmtNum(wh), "Wh"]);
+const splitLiters = (l) => (l >= 1 ? [PP.fmtNum(l), "liters"] : [PP.fmtNum(l * 1000), "mL"]);
+const waterLiters = (wh) => (wh / 1000) * state.waterRate;
+
+// ---------- Totals ----------
+function renderTotals(events, start) {
+  const g = sum(events, (e) => e.gco2e);
+  const wh = sum(events, (e) => e.wh);
+  const tokens = sum(events, (e) => (e.promptTokens ?? 0) + (e.responseTokens ?? 0));
+  const [gv, gu] = splitGrams(g);
+  const [wv, wu] = splitWh(wh);
+  const [lv, lu] = splitLiters(waterLiters(wh));
+  $("m-co2").textContent = gv;
+  $("m-co2-unit").textContent = gu;
+  $("m-co2-foot").textContent = events.length ? `Likely ${PP.fmtGrams(g * PP.UNCERTAINTY.low)}–${PP.fmtGrams(g * PP.UNCERTAINTY.high)}` : "Nothing recorded yet";
+  $("m-prompts").textContent = events.length.toLocaleString();
+  $("m-tokens").textContent = tokens.toLocaleString();
+  $("m-wh").textContent = wv;
+  $("m-wh-unit").textContent = wu;
+  $("m-water").textContent = lv;
+  $("m-water-unit").textContent = lu;
+  $("water-rate-label").textContent = state.waterRate;
+  $("about-range").textContent = `${PP.fmtGrams(g * PP.UNCERTAINTY.low)}–${PP.fmtGrams(g * PP.UNCERTAINTY.high)} CO₂e`;
+
+  const fmtDate = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  $("date-range").textContent = `${fmtDate(start)} — ${fmtDate(Date.now())}, ${new Date().getFullYear()} · ${events.length.toLocaleString()} prompt${events.length === 1 ? "" : "s"}`;
+}
+
+// ---------- Everyday comparison ----------
 function setupEquivalentSelect() {
   const select = $("equiv-select");
   select.replaceChildren(...PP.EQUIVALENTS.map((eq) => el("option", { value: eq.id }, eq.label)));
-  chrome.storage.local.get("equivChoice").then(({ equivChoice }) => {
-    if (equivChoice && PP.EQUIVALENTS.some((eq) => eq.id === equivChoice)) select.value = equivChoice;
-    renderEquivalent();
-  });
   select.addEventListener("change", () => {
-    chrome.storage.local.set({ equivChoice: select.value }); // remember the choice
+    chrome.storage.local.set({ equivChoice: select.value });
     renderEquivalent();
   });
 }
 
 function renderEquivalent() {
   const eq = PP.EQUIVALENTS.find((x) => x.id === $("equiv-select").value) ?? PP.EQUIVALENTS[0];
-  if (!weekTotals.count) {
-    $("equivalent").textContent = "";
+  const g = sum(state.current, (e) => e.gco2e);
+  const wh = sum(state.current, (e) => e.wh);
+  if (!state.current.length) {
+    $("equiv-value").textContent = "Nothing yet";
+    $("equiv-desc").textContent = "Use AI or import your history to see a comparison.";
     return;
   }
-  const amount = eq.basis === "g" ? weekTotals.g : weekTotals.wh;
-  const basisText = eq.basis === "g" ? "by CO₂" : "by electricity";
-  $("equivalent").replaceChildren(
-    `≈ ${eq.describe(amount)}`,
-    el("span", { className: "muted basis" }, ` (${basisText})`)
-  );
+  const amount = eq.basis === "g" ? g : eq.basis === "water" ? waterLiters(wh) : wh;
+  const text = eq.describe(amount);
+  // Split "3.2 hours of a 10 W LED bulb" into a big value and a description.
+  const m = text.match(/^(boiling\s)?([\d.,<>]+\s?\S*)\s(.*)$/);
+  if (m && !m[1]) {
+    $("equiv-value").textContent = m[2];
+    $("equiv-desc").textContent = m[3];
+  } else {
+    $("equiv-value").textContent = text;
+    $("equiv-desc").textContent = "";
+  }
+  const basis = { g: "by CO₂", wh: "by electricity", water: `by cooling water at ${state.waterRate} L/kWh` }[eq.basis];
+  $("equiv-desc").textContent += ` (${basis})`;
+}
+
+// ---------- How does your usage compare? (with the plant) ----------
+// Daily electricity is turned into "example chats per day" (one prompt with a
+// typical reply ≈ 0.3 Wh) and compared with the chosen reference.
+
+function plantSvg(stage) {
+  const pot = `<ellipse cx="75" cy="141" rx="44" ry="5" style="fill:var(--track)"/>
+    <path d="M50 106 h50 l-7 32 h-36 z" style="fill:var(--pot)"/>
+    <rect x="46" y="98" width="58" height="11" rx="3" style="fill:var(--pot-rim)"/>`;
+  const shapes = {
+    seed: `<path d="M75 98 V80" style="stroke:var(--stem)" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <path d="M75 84 C 66 84, 60 78, 58 70 C 68 70, 74 75, 75 84 Z" style="fill:var(--leaf-2)"/>
+      <path d="M75 82 C 84 82, 90 76, 92 68 C 82 68, 76 73, 75 82 Z" style="fill:var(--leaf-2)"/>`,
+    thriving: `<path d="M75 98 V46" style="stroke:var(--stem)" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M75 80 C 52 80, 40 66, 38 48 C 58 48, 72 58, 75 80 Z" style="fill:var(--leaf)"/>
+      <path d="M75 72 C 96 72, 110 58, 112 40 C 92 40, 78 50, 75 72 Z" style="fill:var(--leaf)"/>
+      <path d="M75 58 C 60 54, 54 40, 56 26 C 70 30, 78 42, 75 58 Z" style="fill:var(--leaf-2)"/>
+      <path d="M75 54 C 88 48, 94 36, 92 22 C 80 28, 74 40, 75 54 Z" style="fill:var(--leaf-2)"/>
+      <circle cx="75" cy="40" r="5" style="fill:#f2c94c"/>`,
+    okay: `<path d="M75 98 C 75 80, 73 66, 76 54" style="stroke:var(--stem)" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M75 82 C 54 84, 42 74, 38 60 C 56 58, 70 66, 75 82 Z" style="fill:var(--leaf)"/>
+      <path d="M75 74 C 94 76, 106 66, 110 52 C 92 50, 79 58, 75 74 Z" style="fill:var(--leaf)"/>
+      <path d="M76 60 C 66 54, 62 44, 64 34 C 74 38, 78 48, 76 60 Z" style="fill:var(--leaf-2)"/>`,
+    pale: `<path d="M75 98 C 75 84, 74 72, 78 62" style="stroke:var(--stem-pale)" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <path d="M75 84 C 58 88, 46 82, 40 72 C 56 68, 70 74, 75 84 Z" style="fill:var(--leaf-pale)"/>
+      <path d="M76 78 C 92 82, 104 76, 108 66 C 92 62, 80 68, 76 78 Z" style="fill:var(--leaf-pale)"/>
+      <path d="M78 64 C 72 58, 70 50, 72 44 C 80 48, 82 56, 78 64 Z" style="fill:var(--leaf-pale-2)"/>`,
+    wilting: `<path d="M75 98 C 75 84, 72 72, 84 64" style="stroke:var(--stem-pale)" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <path d="M75 84 C 60 86, 48 98, 42 112 C 58 108, 71 98, 75 84 Z" style="fill:var(--wilt)"/>
+      <path d="M76 78 C 90 82, 102 94, 108 108 C 92 104, 80 94, 76 78 Z" style="fill:var(--wilt)"/>
+      <path d="M84 64 C 92 66, 98 74, 100 84 C 92 82, 86 74, 84 64 Z" style="fill:var(--wilt-2)"/>`,
+  };
+  const label = {
+    seed: "A small sprout",
+    thriving: "A thriving plant with four green leaves and a flower",
+    okay: "A healthy plant with three leaves",
+    pale: "A pale plant with small, washed-out leaves",
+    wilting: "A wilting plant with drooping brown leaves",
+  }[stage];
+  return `<svg viewBox="0 0 150 150" width="84" height="84" role="img" aria-label="${label}">${pot}${shapes[stage]}</svg>`;
+}
+
+const PLANT_TEXT = {
+  seed: ["Plant a seed", "No usage recorded in this period yet."],
+  thriving: ["Your plant is thriving", "You're well below this reference. Keep it up."],
+  okay: ["Your plant is doing fine", "You're around this reference."],
+  pale: ["Your plant looks pale", "You're above this reference. A habit below can help it recover."],
+  wilting: ["Your plant is struggling", "You're more than double this reference. Try a habit below."],
+};
+
+async function renderBenchmark(events, start) {
+  const days = Math.max(1, Math.round((dayStart(Date.now()) - start) / DAY) + 1);
+  const ref = Number($("reference").value);
+  const dailyChats = sum(events, (e) => e.wh) / days / PP.WH_PER_EXAMPLE_CHAT;
+  const ratio = dailyChats / ref;
+
+  const status = !events.length ? "No usage recorded" : ratio < 0.9 ? "Below this reference" : ratio > 1.1 ? "Above this reference" : "Close to this reference";
+  $("bench-status").textContent = status;
+  $("bench-daily").textContent = PP.fmtNum(dailyChats);
+  const diff = Math.abs(ratio - 1) * 100;
+  $("bench-diff").textContent = !events.length
+    ? "No recorded use in this period. Start tracking or import history."
+    : diff < 1
+      ? "Matches the selected reference."
+      : `${PP.fmtNum(diff)}% ${ratio < 1 ? "less" : "more"} than ${ref} chats/day, averaged over ${days} day${days === 1 ? "" : "s"}.`;
+  $("bench-marker").style.left = `${Math.min(100, ratio * 50)}%`;
+  $("bench-track").setAttribute("aria-label", `${PP.fmtPct(Math.min(ratio, 9.99))} of the daily reference. The scale ends at twice the reference.`);
+
+  const stage = !events.length ? "seed" : ratio < 0.6 ? "thriving" : ratio <= 1.1 ? "okay" : ratio <= 2 ? "pale" : "wilting";
+  $("plant").innerHTML = plantSvg(stage);
+  $("plant-title").textContent = PLANT_TEXT[stage][0];
+  $("plant-text").textContent = PLANT_TEXT[stage][1];
+
+  const { habits = {} } = await chrome.storage.local.get("habits");
+  let done = 0;
+  for (const box of document.querySelectorAll("[data-habit]")) {
+    box.checked = !!habits[box.dataset.habit];
+    if (box.checked) done++;
+  }
+  $("habit-count").textContent = done;
 }
 
 // ---------- Which AI you use: a transparent breakdown ----------
-// The split can be measured by prompts, CO₂ or electricity. They differ
-// because each AI uses a different amount of energy per prompt and replies
-// vary in length, so the table shows the numbers behind every share.
-
 let siteMeasure = "prompts";
 let lastSiteEvents = [];
 const MEASURES = {
@@ -131,13 +232,11 @@ const MEASURES = {
 function renderSites(events) {
   lastSiteEvents = events;
   const m = MEASURES[siteMeasure];
-  const bySite = groupBy(events, "site");
-  const rows = Object.entries(bySite)
+  const rows = Object.entries(groupBy(events, "site"))
     .map(([site, evs]) => ({ site, evs, value: m.value(evs) }))
     .sort((a, b) => b.value - a.value);
   const total = rows.reduce((n, r) => n + r.value, 0) || 1;
 
-  // Stacked bar: tiny shares get a minimum width so they stay visible.
   $("site-stack").replaceChildren(
     ...rows.map((r) =>
       el("span", {
@@ -147,11 +246,11 @@ function renderSites(events) {
     )
   );
   $("site-stack").setAttribute("aria-label",
-    `Share by ${m.label.toLowerCase()}: ` + rows.map((r) => `${SITE_INFO[r.site].name} ${PP.fmtPct(r.value / total)}`).join(", "));
+    rows.length ? `Share by ${m.label.toLowerCase()}: ` + rows.map((r) => `${SITE_INFO[r.site].name} ${PP.fmtPct(r.value / total)}`).join(", ") : "No usage yet");
 
   $("site-col").textContent = m.label;
   $("site-rows").replaceChildren(
-    ...rows.map((r) => {
+    ...(rows.length ? rows : []).map((r) => {
       const info = PP.SITES[r.site];
       const whPerPrompt = sum(r.evs, (e) => e.wh) / r.evs.length;
       const detail = r.site === "other"
@@ -162,7 +261,7 @@ function renderSites(events) {
           el("div", { className: "site-name" },
             el("span", { className: "swatch", style: { background: SITE_INFO[r.site].color } }),
             SITE_INFO[r.site].name,
-            ...(info ? [el("span", { className: info.published ? "chip published" : "chip estimate", title: info.source }, info.published ? "published" : "estimate")] : [])
+            ...(info ? [el("span", { className: info.published ? "tag published" : "tag", title: info.source }, info.published ? "published" : "estimate")] : [])
           ),
           el("div", { className: "site-detail" }, detail)
         ),
@@ -171,6 +270,7 @@ function renderSites(events) {
       );
     })
   );
+  if (!rows.length) $("site-rows").append(el("tr", {}, el("td", { colSpan: 3, className: "site-detail" }, "No usage in this period yet.")));
 
   $("site-note").textContent = siteMeasure === "prompts"
     ? "Very small shares are drawn a little wider so you can see them. The table has the exact numbers."
@@ -184,31 +284,29 @@ for (const radio of document.querySelectorAll('input[name="site-measure"]')) {
   });
 }
 
-function renderCategories(week) {
-  const byCat = Object.entries(groupBy(week, "category")).sort((a, b) => b[1].length - a[1].length);
+// ---------- What you use it for ----------
+function renderCategories(events) {
+  const byCat = Object.entries(groupBy(events, "category")).sort((a, b) => b[1].length - a[1].length);
   const max = byCat[0]?.[1].length ?? 1;
   const box = $("category-bars");
   box.replaceChildren();
-  const otherShare = (groupBy(week, "category").Other?.length ?? 0) / (week.length || 1);
-  $("category-note").hidden = otherShare < 0.5;
-
-  for (const [category, events] of byCat) {
-    const bySite = groupBy(events, "site");
-    const track = el("div", { className: "bar-track", style: { width: `${(events.length / max) * 100}%` } });
+  $("category-note").hidden = (groupBy(events, "category").Other?.length ?? 0) / (events.length || 1) < 0.5;
+  if (!byCat.length) {
+    box.append(el("p", { className: "note" }, "No usage in this period yet."));
+    return;
+  }
+  for (const [category, evs] of byCat) {
+    const bySite = groupBy(evs, "site");
+    const track = el("div", { className: "bar-track", style: { width: `${(evs.length / max) * 100}%` } });
     for (const [site, info] of Object.entries(SITE_INFO)) {
       const n = bySite[site]?.length ?? 0;
-      if (n) {
-        track.append(el("span", {
-          title: `${info.name}: ${n}`,
-          style: { width: `${(n / events.length) * 100}%`, background: info.color },
-        }));
-      }
+      if (n) track.append(el("span", { title: `${info.name}: ${n}`, style: { width: `${(n / evs.length) * 100}%`, background: info.color } }));
     }
     box.append(
-      el("div", { className: "bar-row", title: category === "Other" ? "Prompts that didn't match any task keywords" : "" },
+      el("div", { className: "bar-row" },
         el("div", { className: "bar-label" },
           el("span", {}, category),
-          el("span", {}, `${events.length.toLocaleString()} · ${PP.fmtPct(events.length / week.length)} · ${PP.fmtGrams(sum(events, (e) => e.gco2e))}`)
+          el("span", {}, `${evs.length.toLocaleString()} · ${PP.fmtPct(evs.length / events.length)} · ${PP.fmtGrams(sum(evs, (e) => e.gco2e))}`)
         ),
         track
       )
@@ -216,115 +314,102 @@ function renderCategories(week) {
   }
 }
 
-// Column chart: one bar per day (7 or 30 days) or per month (all time).
-function renderTimeline(events) {
-  const period = currentPeriod();
-  const buckets = [];
-  if (period.days) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    for (let i = period.days - 1; i >= 0; i--) {
-      const start = new Date(today);
-      start.setDate(today.getDate() - i);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 1);
-      const label = start.toLocaleDateString(undefined, period.days <= 7 ? { weekday: "short" } : { month: "short", day: "numeric" });
-      buckets.push({ start: +start, end: +end, label, tip: start.toLocaleDateString() });
-    }
-    $("timeline-title").textContent = "Daily emissions";
-  } else {
-    const first = new Date(Math.min(...events.map((e) => e.timestamp), Date.now()));
-    let m = new Date(first.getFullYear(), first.getMonth(), 1);
-    const now = new Date();
-    const months = [];
-    while (m <= now) {
-      months.push(m);
-      m = new Date(m.getFullYear(), m.getMonth() + 1, 1);
-    }
-    for (const start of months.slice(-24)) {
-      const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
-      buckets.push({
-        start: +start,
-        end: +end,
-        label: start.toLocaleDateString(undefined, { month: "short" }),
-        tip: start.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
-      });
-    }
-    $("timeline-title").textContent = "Monthly emissions";
-  }
-  for (const b of buckets) b.g = sum(events.filter((e) => e.timestamp >= b.start && e.timestamp < b.end), (e) => e.gco2e);
-
-  const max = Math.max(...buckets.map((b) => b.g), 0.0001);
-  // Many thin bars: label only the first and last under the chart.
-  const dense = buckets.length > 12;
-  $("daily-bars").classList.toggle("dense", dense);
-  $("daily-bars").replaceChildren(
-    ...buckets.map((b) =>
-      el("div", { className: "day", title: `${b.tip}: ${PP.fmtGrams(b.g)} CO₂e` },
-        el("div", { className: "col", style: { height: `${(b.g / max) * 75}px` } }),
-        ...(dense ? [] : [el("div", { className: "lbl" }, b.label)])
-      )
-    )
-  );
-  $("timeline-axis").hidden = !dense;
-  $("timeline-axis").replaceChildren(
-    el("span", {}, buckets[0].label),
-    el("span", {}, buckets[buckets.length - 1].label)
-  );
-}
-
-function buildSuggestions(week) {
+// ---------- Suggestions ----------
+function renderSuggestions(events) {
   const tips = [];
-  const total = week.length;
-  const byCat = groupBy(week, "category");
-
-  for (const [category, events] of Object.entries(byCat)) {
+  const total = events.length;
+  for (const [category, evs] of Object.entries(groupBy(events, "category"))) {
     const alts = ALTERNATIVES[category];
-    if (!alts) continue;
-    const share = events.length / total;
-    if (share < 0.3 || events.length < 5) continue;
-
-    const topSite = Object.entries(groupBy(events, "site")).sort((a, b) => b[1].length - a[1].length)[0];
-    const siteName = SITE_INFO[topSite[0]].name;
-    const siteShare = PP.fmtPct(topSite[1].length / events.length);
-    const halfSaved = sum(events, (e) => e.gco2e) / 2;
-
+    const share = evs.length / total;
+    if (!alts || share < 0.3 || evs.length < 5) continue;
+    const topSite = Object.entries(groupBy(evs, "site")).sort((a, b) => b[1].length - a[1].length)[0];
     tips.push({
-      title: `${PP.fmtPct(share)} of your prompts are ${category.toLowerCase()} (${siteShare} of those on ${siteName}).`,
+      title: `${PP.fmtPct(share)} of your prompts are ${category.toLowerCase()} (${PP.fmtPct(topSite[1].length / evs.length)} of those on ${SITE_INFO[topSite[0]].name}).`,
       alts: `Try: ${alts.join(", ")}.`,
-      save: `Doing half of these another way would have saved ≈ ${PP.fmtGrams(halfSaved)} CO₂e ${currentPeriod().name}.`,
+      save: `Doing half of these another way would have saved ≈ ${PP.fmtGrams(sum(evs, (e) => e.gco2e) / 2)} CO₂e ${RANGES[currentRange()]}.`,
     });
   }
-
   if (total >= 10) {
     tips.push({
       title: "Ask once, in detail.",
       alts: "One complete prompt uses less energy than several follow-ups. Avoid regenerating replies, and use a smaller or faster model for simple questions.",
     });
   }
-  return tips;
-}
-
-function renderSuggestions(week) {
-  const list = $("suggestions");
-  const tips = buildSuggestions(week);
-  if (!tips.length) {
-    list.replaceChildren(el("li", { className: "alts" }, "Use AI for a few more prompts to get personal suggestions."));
-    return;
-  }
-  list.replaceChildren(
-    ...tips.map((t) =>
-      el("li", {},
-        el("strong", {}, t.title),
-        el("div", { className: "alts" }, t.alts),
-        ...(t.save ? [el("div", { className: "save" }, t.save)] : [])
-      )
-    )
+  $("suggestions").replaceChildren(
+    ...(tips.length
+      ? tips.map((t) => el("li", {}, el("strong", {}, t.title), el("div", { className: "alts" }, t.alts), ...(t.save ? [el("div", { className: "save" }, t.save)] : [])))
+      : [el("li", { className: "alts" }, "Use AI for a few more prompts to get personal suggestions.")])
   );
 }
 
-// CO₂ depends on the power grid. Use the country picked on the map, or a
-// guess from the browser's language, or a world-average grid.
+// ---------- Connected platforms ----------
+const isLight = (hex) => {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55;
+};
+
+async function loadGranted() {
+  const { origins = [] } = await chrome.permissions.getAll();
+  state.granted = new Set(origins);
+}
+const siteConnected = (site) => PP.originsFor(site).some((o) => state.granted.has(o));
+
+function renderPlatforms(events) {
+  const sites = Object.keys(PP.SITES);
+  const connected = sites.filter(siteConnected);
+  $("connected-count").textContent = `${connected.length} of ${sites.length} connected`;
+  $("connect-banner").hidden = connected.length > 0;
+
+  const bySite = groupBy(events, "site");
+  $("platform-rows").replaceChildren(
+    ...sites.map((site) => {
+      const info = PP.SITES[site];
+      const evs = bySite[site] ?? [];
+      const on = siteConnected(site);
+      const color = PP.siteColor(site);
+      const toggle = el("button", {
+        className: "switch",
+        role: "switch",
+        "aria-checked": String(on),
+        "aria-label": `Track ${info.name}`,
+        title: on ? `Stop tracking ${info.name}` : `Allow PromptPrint to track ${info.name}`,
+      });
+      toggle.addEventListener("click", () => toggleSite(site, toggle));
+      return el("div", { className: "platform-row" },
+        el("span", { className: "site-badge", style: { background: color, color: isLight(color) ? "#1d1d1b" : "#ffffff" }, "aria-hidden": "true" }, info.name[0]),
+        el("div", { className: "platform-info" },
+          el("strong", {}, info.name),
+          el("small", {}, on ? `${info.hosts[0]} · ${evs.length.toLocaleString()} prompts · ${PP.fmtGrams(sum(evs, (e) => e.gco2e))}` : `${info.hosts[0]} · not tracked`)
+        ),
+        toggle
+      );
+    })
+  );
+}
+
+async function toggleSite(site, button) {
+  const origins = PP.originsFor(site);
+  button.disabled = true;
+  try {
+    if (siteConnected(site)) {
+      await chrome.permissions.remove({ origins });
+    } else {
+      // Chrome shows its own permission prompt for this website.
+      await chrome.permissions.request({ origins });
+    }
+  } catch (e) {
+    $("load-status").hidden = false;
+    $("load-status").textContent = `Couldn't change tracking: ${e.message}`;
+  } finally {
+    button.disabled = false;
+    await loadGranted();
+    renderPlatforms(state.current);
+  }
+}
+
+// ---------- Main render ----------
+// CO₂ depends on the power grid: the country picked on the map, a guess from
+// the browser language, or a world-average grid.
 async function gridSetting() {
   const { country } = await chrome.storage.local.get("country");
   const c = PP.gridById.get(country ?? PP.guessCountryId());
@@ -332,153 +417,38 @@ async function gridSetting() {
 }
 
 async function render() {
-  const { events = [] } = await chrome.storage.local.get("events");
+  const { events = [], waterRate } = await chrome.storage.local.get(["events", "waterRate"]);
+  if (Number.isFinite(waterRate)) state.waterRate = waterRate;
   const { name, grid } = await gridSetting();
-  $("grid-name").textContent = name;
+  $("about-grid").textContent = name;
   for (const e of events) e.gco2e = (e.wh / 1000) * grid;
-  const now = Date.now();
-  const { days } = currentPeriod();
-  const current = days ? events.filter((e) => e.timestamp > now - days * DAY) : events;
-  const previous = days
-    ? events.filter((e) => e.timestamp <= now - days * DAY && e.timestamp > now - 2 * days * DAY)
-    : [];
+  state.events = events;
 
-  $("empty").hidden = current.length > 0;
-  $("charts").hidden = current.length === 0;
-  $("empty-older").hidden = !(events.length && !current.length);
-
-  renderTotals(current, previous);
+  const range = currentRange();
+  const start = rangeStart(range, events);
+  const current = events.filter((e) => e.timestamp >= start);
+  state.current = current;
   const shown = foldSites(current);
+
+  renderTotals(current, start);
+  renderEquivalent();
+  await renderBenchmark(current, start);
   renderSites(shown);
   renderCategories(shown);
-  renderTimeline(current);
   renderSuggestions(shown);
-  renderGarden(events);
+  renderPlatforms(current);
 }
 
-// ---------- Plant & weekly budget ----------
-// The plant reflects the last 7 days against a weekly CO₂ budget: thriving
-// under 80%, needs care up to 100%, wilting over budget.
-
-const DEFAULT_BUDGET_G = 20;
-
-// Suggest your recent weekly average (rounded up), so a normal week keeps the
-// plant healthy and using less makes it thrive. Used until you set your own.
-function suggestBudget(events) {
-  const now = Date.now();
-  const recent = events.filter((e) => e.timestamp > now - 28 * DAY);
-  if (!recent.length) return DEFAULT_BUDGET_G;
-  const spanDays = Math.max(7, Math.min(28, (now - Math.min(...recent.map((e) => e.timestamp))) / DAY));
-  const weekly = (sum(recent, (e) => e.gco2e) / spanDays) * 7;
-  if (weekly < 1) return Math.max(0.5, Math.ceil(weekly * 10) / 10);
-  return weekly < 20 ? Math.ceil(weekly) : Math.ceil(weekly / 5) * 5;
+// ---------- Controls ----------
+for (const r of document.querySelectorAll('input[name="range"]')) {
+  r.addEventListener("change", () => {
+    chrome.storage.local.set({ range: r.value });
+    render();
+  });
 }
 
-function plantSvg(state) {
-  const pot = `<ellipse cx="75" cy="141" rx="44" ry="5" style="fill:var(--track)"/>
-    <path d="M50 106 h50 l-7 32 h-36 z" style="fill:var(--pot)"/>
-    <rect x="46" y="98" width="58" height="11" rx="3" style="fill:var(--pot-rim)"/>`;
-  const shapes = {
-    seed: `<path d="M75 98 V80" style="stroke:var(--stem)" stroke-width="4" stroke-linecap="round" fill="none"/>
-      <path d="M75 84 C 66 84, 60 78, 58 70 C 68 70, 74 75, 75 84 Z" style="fill:var(--leaf-2)"/>
-      <path d="M75 82 C 84 82, 90 76, 92 68 C 82 68, 76 73, 75 82 Z" style="fill:var(--leaf-2)"/>`,
-    thriving: `<path d="M75 98 V50" style="stroke:var(--stem)" stroke-width="5" stroke-linecap="round" fill="none"/>
-      <path d="M75 80 C 52 80, 40 66, 38 48 C 58 48, 72 58, 75 80 Z" style="fill:var(--leaf)"/>
-      <path d="M75 72 C 96 72, 110 58, 112 40 C 92 40, 78 50, 75 72 Z" style="fill:var(--leaf)"/>
-      <path d="M75 58 C 60 54, 54 40, 56 26 C 70 30, 78 42, 75 58 Z" style="fill:var(--leaf-2)"/>
-      <path d="M75 54 C 88 48, 94 36, 92 22 C 80 28, 74 40, 75 54 Z" style="fill:var(--leaf-2)"/>`,
-    okay: `<path d="M75 98 C 75 80, 73 66, 76 54" style="stroke:var(--stem)" stroke-width="5" stroke-linecap="round" fill="none"/>
-      <path d="M75 82 C 54 84, 42 74, 38 60 C 56 58, 70 66, 75 82 Z" style="fill:var(--leaf)"/>
-      <path d="M75 74 C 94 76, 106 66, 110 52 C 92 50, 79 58, 75 74 Z" style="fill:var(--leaf)"/>
-      <path d="M76 60 C 66 54, 62 44, 64 34 C 74 38, 78 48, 76 60 Z" style="fill:var(--leaf-2)"/>`,
-    wilting: `<path d="M75 98 C 75 84, 72 72, 84 64" style="stroke:var(--stem)" stroke-width="5" stroke-linecap="round" fill="none"/>
-      <path d="M75 84 C 60 86, 48 98, 42 112 C 58 108, 71 98, 75 84 Z" style="fill:var(--wilt)"/>
-      <path d="M76 78 C 90 82, 102 94, 108 108 C 92 104, 80 94, 76 78 Z" style="fill:var(--wilt)"/>
-      <path d="M84 64 C 92 66, 98 74, 100 84 C 92 82, 86 74, 84 64 Z" style="fill:var(--wilt-2)"/>`,
-  };
-  const label = { seed: "A small sprout", thriving: "A healthy plant with four leaves", okay: "A plant with three leaves, starting to droop", wilting: "A wilting plant with drooping brown leaves" }[state];
-  return `<svg viewBox="0 0 150 150" width="92" height="92" role="img" aria-label="${label}">${pot}${shapes[state]}</svg>`;
-}
-
-function dayStart(t) {
-  const d = new Date(t);
-  d.setHours(0, 0, 0, 0);
-  return +d;
-}
-
-// Full days in a row (ending yesterday) with CO₂ at or under a day's share of
-// the weekly budget. Today isn't over, so it doesn't count yet. Days before
-// you installed PromptPrint don't count.
-function streakDays(events, budget, installedAt) {
-  const limit = budget / 7;
-  const first = dayStart(installedAt ?? Date.now());
-  const perDay = new Map();
-  for (const e of events) {
-    const d = dayStart(e.timestamp);
-    perDay.set(d, (perDay.get(d) ?? 0) + e.gco2e);
-  }
-  let streak = 0;
-  for (let d = dayStart(dayStart(Date.now()) - DAY / 2); d >= first; d = dayStart(d - DAY / 2)) {
-    if ((perDay.get(d) ?? 0) > limit) break;
-    streak++;
-  }
-  return streak;
-}
-
-async function renderGarden(events) {
-  const { budget: saved, installedAt, habits = {} } = await chrome.storage.local.get(["budget", "installedAt", "habits"]);
-  const budget = saved ?? suggestBudget(events);
-  const week = events.filter((e) => e.timestamp > Date.now() - 7 * DAY);
-  const used = sum(week, (e) => e.gco2e);
-  const ratio = used / budget;
-  const state = !events.length ? "seed" : ratio < 0.8 ? "thriving" : ratio <= 1 ? "okay" : "wilting";
-
-  $("plant").innerHTML = plantSvg(state);
-  $("plant-title").textContent = {
-    seed: "Plant a seed",
-    thriving: "Your plant is thriving",
-    okay: "Your plant needs a little care",
-    wilting: "Your plant is wilting",
-  }[state];
-  $("plant-text").textContent = events.length
-    ? `${PP.fmtGrams(used)} of your ${PP.fmtGrams(budget)} weekly budget${saved ? "" : " (suggested)"} · last 7 days`
-    : `Use AI and your plant grows while you stay under ${PP.fmtGrams(budget)} a week.`;
-
-  $("budget-fill").style.width = `${Math.min(ratio, 1) * 100}%`;
-  $("budget-fill").classList.toggle("over", ratio > 1);
-  $("budget-bar").setAttribute("aria-label", `${PP.fmtPct(Math.min(ratio, 9.99))} of weekly budget used`);
-
-  const streak = events.length ? streakDays(events, budget, installedAt) : 0;
-  $("streak").replaceChildren();
-  $("streak").insertAdjacentHTML("afterbegin",
-    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/></svg>');
-  $("streak").append(streak ? `${streak}-day streak` : `Start a streak: stay under ${PP.fmtGrams(budget / 7)} today`);
-  $("streak").title = `Days in a row at or under ${PP.fmtGrams(budget / 7)} (your daily share of the budget)`;
-
-  if (document.activeElement !== $("budget-input")) $("budget-input").value = Math.round(budget * 10) / 10;
-
-  let done = 0;
-  for (const box of document.querySelectorAll("[data-habit]")) {
-    box.checked = !!habits[box.dataset.habit];
-    if (box.checked) done++;
-  }
-  $("habit-count").textContent = done;
-}
-
-$("budget-edit").addEventListener("click", () => {
-  const form = $("budget-form");
-  form.hidden = !form.hidden;
-  $("budget-edit").setAttribute("aria-expanded", String(!form.hidden));
-  if (!form.hidden) $("budget-input").focus();
-});
-
-$("budget-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const value = Number($("budget-input").value);
-  if (!(value > 0)) return;
-  await chrome.storage.local.set({ budget: value });
-  $("budget-form").hidden = true;
-  $("budget-edit").setAttribute("aria-expanded", "false");
+$("reference").addEventListener("change", () => {
+  chrome.storage.local.set({ reference: $("reference").value });
   render();
 });
 
@@ -491,73 +461,12 @@ for (const box of document.querySelectorAll("[data-habit]")) {
   });
 }
 
-// ---------- Theme menu ----------
-function setupThemeMenu() {
-  const nameOf = (id) => PPTheme.THEMES.find((t) => t.id === id)?.name ?? "Default";
-  const showCurrent = () => {
-    const name = nameOf(PPTheme.current());
-    $("theme-name").textContent = name;
-    $("theme-btn").setAttribute("aria-label", `Theme: ${name}. Change theme`);
-    $("theme-btn").title = `Theme: ${name}`;
-  };
+$("map-btn").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("map.html") }));
+$("connect-btn").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") }));
+$("import-btn").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("import.html") }));
 
-  $("theme-grid").replaceChildren(
-    ...PPTheme.THEMES.map((t) => {
-      const input = el("input", { type: "radio", name: "theme", value: t.id, checked: t.id === PPTheme.current() });
-      input.addEventListener("change", () => {
-        PPTheme.set(t.id);
-        showCurrent();
-      });
-      return el("label", { className: "theme-option" },
-        input,
-        el("span", { className: "theme-dots" }, ...t.dots.map((c) => el("i", { style: { background: c } }))),
-        t.name
-      );
-    })
-  );
-
-  $("theme-btn").addEventListener("click", () => {
-    const menu = $("theme-menu");
-    menu.hidden = !menu.hidden;
-    $("theme-btn").setAttribute("aria-expanded", String(!menu.hidden));
-    if (!menu.hidden) menu.querySelector("input:checked")?.focus();
-  });
-
-  // The saved theme may arrive a moment after opening; keep the label in sync.
-  chrome.storage.onChanged.addListener((changes) => {
-    if (changes.theme) {
-      for (const r of document.querySelectorAll('input[name="theme"]')) r.checked = r.value === PPTheme.current();
-      showCurrent();
-    }
-  });
-  showCurrent();
-}
-
-// Restore the last period picked. With no choice saved yet, show "All time"
-// when there's no recent usage (e.g. right after importing old chats).
-async function setupPeriodSelect() {
-  const { period, events = [] } = await chrome.storage.local.get(["period", "events"]);
-  if (period && PERIODS[period]) $("period").value = period;
-  else if (events.length && !events.some((e) => e.timestamp > Date.now() - 7 * DAY)) $("period").value = "all";
-  $("period").addEventListener("change", () => {
-    chrome.storage.local.set({ period: $("period").value });
-    render();
-  });
-}
-
-// ---------- Buttons ----------
-
-$("map-btn").addEventListener("click", () => {
-  chrome.tabs.create({ url: chrome.runtime.getURL("map.html") });
-});
-
-$("import-btn").addEventListener("click", () => {
-  // Opens in a full tab: a file picker would close this small popup.
-  chrome.tabs.create({ url: chrome.runtime.getURL("import.html") });
-});
-
-// "Load data": read open ChatGPT / Claude / Gemini tabs for prompts that
-// weren't counted yet (e.g. sent before installing, or missed by tracking).
+// "Load data": read open AI tabs (on connected platforms) for prompts that
+// weren't counted yet.
 $("load-btn").addEventListener("click", async () => {
   const btn = $("load-btn");
   const status = $("load-status");
@@ -566,10 +475,11 @@ $("load-btn").addEventListener("click", async () => {
   try {
     const res = await chrome.runtime.sendMessage({ type: "load-recent" });
     if (!res?.ok) throw new Error(res?.error ?? "unknown error");
-    status.textContent = !res.tabs
-      ? "No AI chat tabs are open. Open your chats in tabs, then press Load data."
-      : `Checked ${res.tabsRead} of ${res.tabs} AI tab${res.tabs === 1 ? "" : "s"}: ` +
-        `${res.found} prompt${res.found === 1 ? "" : "s"} on screen, ${res.added} new added.`;
+    status.textContent = !res.connected
+      ? "No platforms are connected yet. Switch one on under Your connected platforms."
+      : !res.tabs
+        ? "No chats from connected platforms are open. Open your chats in tabs, then press Load data."
+        : `Checked ${res.tabsRead} of ${res.tabs} AI tab${res.tabs === 1 ? "" : "s"}: ${res.found} prompt${res.found === 1 ? "" : "s"} on screen, ${res.added} new added.`;
   } catch (e) {
     status.textContent = `Couldn't load data: ${e.message}`;
   }
@@ -580,31 +490,46 @@ $("load-btn").addEventListener("click", async () => {
 });
 
 $("clear-btn").addEventListener("click", async () => {
-  if (!confirm("Delete all tracked usage?")) return;
+  if (!confirm("Delete all tracked usage on this device?")) return;
   await chrome.runtime.sendMessage({ type: "clear" });
   render();
 });
 
+$("manual-site").replaceChildren(...Object.entries(PP.SITES).map(([id, s]) => el("option", { value: id }, s.name)));
 $("manual-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  await chrome.runtime.sendMessage({
-    type: "manual-log",
-    site: $("manual-site").value,
-    promptText: $("manual-text").value,
-  });
+  await chrome.runtime.sendMessage({ type: "manual-log", site: $("manual-site").value, promptText: $("manual-text").value });
   $("manual-text").value = "";
   render();
 });
 
-// Update live if new usage is tracked while the popup is open.
-chrome.storage.onChanged.addListener((changes) => {
-  if (changes.events || changes.country || changes.budget) render();
+$("about-btn").addEventListener("click", () => $("about").showModal());
+document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => b.closest("dialog").close()));
+$("water-rate").addEventListener("change", async () => {
+  const field = $("water-rate");
+  const v = Number(field.value);
+  if (field.value === "" || !(v >= 0 && v <= 100)) {
+    $("water-status").textContent = "Enter a number between 0 and 100 L/kWh.";
+    return;
+  }
+  await chrome.storage.local.set({ waterRate: v });
+  $("water-status").textContent = "Saved. All water estimates have been recalculated.";
 });
 
-$("manual-site").replaceChildren(
-  ...Object.entries(PP.SITES).map(([id, s]) => el("option", { value: id }, s.name))
-);
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.events || changes.country || changes.waterRate) render();
+});
+chrome.permissions.onAdded.addListener(async () => { await loadGranted(); renderPlatforms(state.current); });
+chrome.permissions.onRemoved.addListener(async () => { await loadGranted(); renderPlatforms(state.current); });
 
-setupEquivalentSelect();
-setupThemeMenu();
-setupPeriodSelect().then(render);
+// ---------- Start ----------
+(async function init() {
+  setupEquivalentSelect();
+  const { range, reference, equivChoice, waterRate } = await chrome.storage.local.get(["range", "reference", "equivChoice", "waterRate"]);
+  if (range) for (const r of document.querySelectorAll('input[name="range"]')) r.checked = r.value === range;
+  if (reference && $("reference").querySelector(`option[value="${reference}"]`)) $("reference").value = reference;
+  if (equivChoice && PP.EQUIVALENTS.some((eq) => eq.id === equivChoice)) $("equiv-select").value = equivChoice;
+  if (Number.isFinite(waterRate)) $("water-rate").value = waterRate;
+  await loadGranted();
+  await render();
+})();

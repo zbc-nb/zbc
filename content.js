@@ -177,6 +177,7 @@
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === "scan-page") sendResponse({ items: scanPage() });
+    else if (msg?.type === "ping") sendResponse({ ok: true });
   });
 
   function scanForNewPrompts() {

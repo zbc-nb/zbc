@@ -5,22 +5,21 @@ A Chrome extension that tracks how you use AI chatbots (ChatGPT, Claude, Gemini)
 Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md) for the full project plan.
 
 ## Features
-- **Usage tracking:** counts the prompts you send on chatgpt.com, claude.ai and gemini.google.com
-- **Load data:** re-reads your open AI tabs and adds any prompts that weren't counted yet (never double-counts)
-- **Import past history:** reads the chat exports from ChatGPT, Claude and Google Takeout (Gemini) to show your footprint from before you installed it
-- **Time periods:** last 7 days, last 30 days, or all time
-- **Carbon estimate:** grams of CO₂e per prompt, shown as a range and compared to phone charges and miles driven
-- **Task categories:** sorts each prompt into Math, Coding, Writing, Research, Brainstorm or Other
-- **Charts:** which AI you use, what you use it for, and daily emissions
-- **Suggestions:** alternatives for your most common AI tasks, with estimated savings
-- **Private:** everything stays in your browser. The text of your prompts is never saved; only the category is.
+- **Asks first:** on install a welcome page lists every supported AI platform; nothing is tracked until you allow a site in Chrome's permission prompt. **Your connected platforms** in the popup switches each AI on or off anytime (off removes the extension's access to that site).
+- **Usage tracking:** counts the prompts you send on the platforms you've connected.
+- **Load data:** re-reads your open AI tabs (connected platforms only) and adds any prompts that weren't counted yet. Never double-counts.
+- **Import past history:** reads the chat exports from ChatGPT, Claude and Google Takeout (Gemini) to show your footprint from before you installed it.
+- **Totals:** estimated emissions (with a likely range), prompts and tokens, electricity, and a cooling-water scenario, for Today, This week, This month or All time.
+- **Everyday comparisons:** driving, LED bulb, phone charges, streaming, water bottles, trees and more.
+- **How does your usage compare?** Your daily average as "example chats per day" against a reference (2, 10 or 30 chats/day), with **a plant** that thrives well below the reference, goes pale above it and wilts past double. **Habits that help** is a checklist under it.
+- **Which AI you use:** the split by prompts, CO₂ or electricity, with each AI's exact numbers, average energy per prompt, and whether that figure is **published** or **our estimate**.
+- **What you use it for:** task categories (Math, Coding, Writing, Research, Brainstorm, Other) with percentages, plus **Suggestions** for lower-impact alternatives.
+- **World map:** what your usage would emit on each country's power grid.
+- **Private:** everything stays in your browser. Prompt text is never saved; only the category and lengths are.
 
-## Plant, budget & themes
-- **Your plant** reflects the last 7 days against a weekly CO₂ budget: thriving under 80%, needs care up to 100%, wilting over. The budget starts as your recent weekly average (marked "suggested"); set your own with **Change budget**. The streak counts full days in a row under a day's share of the budget. **Habits that help** is a checklist of pledges saved in the browser.
-- **Which AI you use** shows the split by prompts, CO₂ or electricity (they differ because each AI uses a different amount of energy per prompt), with each AI's exact numbers, its average energy per prompt, and whether that energy figure is **published** by the company or **our estimate**. "How is this calculated?" explains the method.
-- **Themes:** Material design is the default look (light and dark; the map and import pages match). The palette button in the popup header opens 15 themes (Material, Classic, plus 13 more styles: skeuomorphic, flat, neumorphism, glass, clay, liquid glass, neo-brutalism, minimal, Bauhaus, retrofuturism, brutalism, anti-design, acid). Themes live in `lib/themes.css` (one block of variables each) and `lib/theme.js` (list, fonts, saving). Themes apply to the popup; the map and import pages use Material.
+![The popup](docs/popup.png)
 
-![All themes](docs/theme-demos.png)
+![The plant at each stage](docs/plant-stages.png)
 
 ## Supported AI sites
 | Site | Live tracking | Reply length measured | Load data | History import |
@@ -40,17 +39,20 @@ Energy per prompt is published only for Gemini and ChatGPT; every other AI uses 
 3. Turn on **Developer mode** (top right).
 4. Click **Load unpacked** and choose the project folder (the one containing `manifest.json`).
 5. Pin the extension: click the puzzle-piece icon, then the pin next to **PromptPrint**.
-6. Use any supported AI site as usual. Click the icon and press **⟳ Load data** to also pick up chats already open in your tabs, or **Import past chat history** for older chats.
+6. A welcome page opens: tick the AI platforms you use and click **Allow tracking on selected platforms**, then confirm Chrome's prompt.
+7. Use any connected AI site as usual. Click the icon and press **⟳ Load data** to also pick up chats already open in your tabs, or **Import past chat history** for older chats.
 
 After changing code, click the reload button on the extension's card in `chrome://extensions`, then refresh any open AI tabs.
 
 ## Project structure
 | File | What it does |
 |---|---|
-| `manifest.json` | Chrome's configuration: permissions, which sites the extension runs on, icons |
+| `manifest.json` | Chrome's configuration: AI sites are *optional* permissions, granted per site by the user |
+| `welcome.html` / `welcome.css` / `welcome.js` | First-run page that explains what's tracked and asks permission per AI platform |
+| `lib/ui.css` | Shared design tokens and components (colors, fonts, panels, buttons, switches) |
 | `content.js` | Runs on the AI sites. Spots each prompt you send and measures the reply length |
-| `background.js` | Categorizes prompts, estimates energy and carbon, saves events without duplicates, runs **Load data** |
-| `popup.html` / `popup.css` / `popup.js` | The window that opens when you click the icon: totals, "That's about the same as…" dropdown, charts, suggestions |
+| `background.js` | Registers the tracker only for allowed sites, categorizes prompts, estimates energy and carbon, saves events without duplicates, runs **Load data** |
+| `popup.html` / `popup.css` / `popup.js` | The 370px popup: totals, everyday comparison, usage comparison with the plant, AI breakdown, tasks, suggestions, connected platforms, Load / Import / Clear |
 | `import.html` / `import.css` / `import.js` | The history importer: reads ChatGPT / Claude / Gemini export files in the browser (nothing is uploaded) |
 | `map.html` / `map.css` / `map.js` | The interactive world map: your real usage and what it would emit on each country's power grid |
 | `lib/grid-data.js` | Carbon intensity of each country's electricity grid (approximate, Ember / Our World in Data 2023) |
@@ -94,6 +96,7 @@ g CO₂e    = energy_Wh ÷ 1000 × grid intensity (g CO₂e per kWh)
 All values can be changed at the top of `background.js` and `popup.js`. Verify each source before presenting.
 
 ## Troubleshooting
+- **Nothing is tracked:** check **Your connected platforms** in the popup; the site's switch must be on.
 - **Prompts aren't being counted:** the AI sites change their HTML often. Open the site, press F12, inspect one of your messages, and update `SELECTORS` at the top of `content.js`. The Console shows `[PromptPrint] tracking <site>` when the script is running.
 - **"Extension context invalidated" in the console:** you reloaded the extension; refresh the AI tab.
 

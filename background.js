@@ -102,9 +102,54 @@ function addUniqueEvents(items, { source, beforeInstallOnly = false }) {
   });
 }
 
-// ---------- "Load data": check open AI tabs for prompts not yet counted ----------
-const AI_TAB_URLS = chrome.runtime.getManifest().host_permissions;
+// ---------- Connected platforms (permissions) ----------
+// AI sites are optional permissions: PromptPrint only reads a site after the
+// person allows it (welcome page or the popup's switches), and stops the
+// moment they switch it off. The tracker is registered for allowed sites only.
+const AI_ORIGINS = chrome.runtime.getManifest().optional_host_permissions;
 
+async function grantedOrigins() {
+  const { origins = [] } = await chrome.permissions.getAll();
+  return AI_ORIGINS.filter((o) => origins.includes(o));
+}
+
+async function syncTracker() {
+  const origins = await grantedOrigins();
+  const registered = await chrome.scripting.getRegisteredContentScripts({ ids: ["tracker"] });
+  if (registered.length) await chrome.scripting.unregisterContentScripts({ ids: ["tracker"] });
+  if (origins.length) {
+    await chrome.scripting.registerContentScripts([
+      { id: "tracker", matches: origins, js: ["content.js"], runAt: "document_idle", persistAcrossSessions: true },
+    ]);
+  }
+  return origins;
+}
+
+// Start tracking in tabs that were already open when access was granted.
+async function startInOpenTabs(origins) {
+  if (!origins?.length) return;
+  for (const tab of await chrome.tabs.query({ url: origins })) {
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: "ping" });
+    } catch {
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] }).catch(() => {});
+    }
+  }
+}
+
+let syncQueue = Promise.resolve();
+const serialSync = (task) => (syncQueue = syncQueue.then(task).catch((e) => console.warn("[PromptPrint]", e)));
+
+chrome.permissions.onAdded.addListener(({ origins }) =>
+  serialSync(async () => {
+    await syncTracker();
+    await startInOpenTabs((origins ?? []).filter((o) => AI_ORIGINS.includes(o)));
+  })
+);
+chrome.permissions.onRemoved.addListener(() => serialSync(syncTracker));
+chrome.runtime.onStartup.addListener(() => serialSync(syncTracker));
+
+// ---------- "Load data": check open AI tabs for prompts not yet counted ----------
 async function scanTab(tab) {
   const ask = () => chrome.tabs.sendMessage(tab.id, { type: "scan-page" });
   try {
@@ -118,7 +163,9 @@ async function scanTab(tab) {
 }
 
 async function loadRecentData() {
-  const tabs = await chrome.tabs.query({ url: AI_TAB_URLS });
+  const origins = await grantedOrigins();
+  if (!origins.length) return { ok: true, connected: 0, tabs: 0, tabsRead: 0, found: 0, added: 0 };
+  const tabs = await chrome.tabs.query({ url: origins });
   const items = [];
   let tabsRead = 0;
   for (const tab of tabs) {
@@ -133,7 +180,7 @@ async function loadRecentData() {
     }
   }
   const saved = await addUniqueEvents(items, { source: "scan" });
-  return { ...saved, tabs: tabs.length, tabsRead, found: items.length };
+  return { ...saved, connected: origins.length, tabs: tabs.length, tabsRead, found: items.length };
 }
 
 // ---------- Install / update ----------
@@ -145,10 +192,19 @@ function removeSampleData() {
   });
 }
 
+const openWelcome = () => chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") });
+
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   const { installedAt } = await chrome.storage.local.get("installedAt");
   if (reason === "install" || !installedAt) await chrome.storage.local.set({ installedAt: Date.now() });
   await removeSampleData();
+  const origins = await serialSync(syncTracker);
+  // Tabs open during install/update still run the old tracker (or none):
+  // start the current one there so tracking continues without reloading.
+  await startInOpenTabs(origins);
+  // Ask for permission on first install, and after an update that left no
+  // platform connected (e.g. upgrading from a version that didn't ask).
+  if (reason === "install" || (reason === "update" && !origins?.length)) openWelcome();
 });
 
 // ---------- Messages from content.js, popup.js and import.js ----------
@@ -163,6 +219,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         return addUniqueEvents(msg.items ?? [], { source: "import", beforeInstallOnly: true });
       case "load-recent":
         return loadRecentData();
+      case "open-welcome":
+        await openWelcome();
+        return { ok: true };
       case "clear":
         await updateEvents(() => ({ next: [], value: null }));
         return { ok: true };

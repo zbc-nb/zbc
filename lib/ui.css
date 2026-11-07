@@ -1,0 +1,197 @@
+/* lib/ui.css: PromptPrint's design tokens and shared components (the
+   "footprint" look: sage greens, DM Sans + Manrope, soft panels).
+   Used by the popup and the welcome page. */
+
+:root {
+  --bg: #f7f9f5;
+  --panel: #ffffff;
+  --panel-soft: #eef3e8;
+  --panel-tint: #edf2f1;
+  --text: #293c33;
+  --heading: #234b34;
+  --muted: #5f6b5b;
+  --faint: #7e887b;
+  --border: #e1e7dc;
+  --track: #e6ece1;
+  --primary: #264e36;      /* deep green: primary card, buttons */
+  --on-primary: #eff6df;
+  --sage: #89ad63;         /* accents, focus */
+  --sage-text: #4c6b33;    /* sage dark enough for text */
+  --good: #3f7d4f;
+  --warn: #9a5b12;
+  --danger: #b42318;
+  --chip-bg: #e7efdc;
+  --switch-off: #d6ddd1;
+
+  --leaf: #4f9a5c;
+  --leaf-2: #86c08f;
+  --leaf-pale: #cdd8b8;
+  --leaf-pale-2: #e2e8cf;
+  --stem: #3f7d4f;
+  --stem-pale: #a9b896;
+  --pot: #c9774f;
+  --pot-rim: #b5653f;
+  --wilt: #b39a52;
+  --wilt-2: #c9b46d;
+
+  --font: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: Manrope, "DM Sans", system-ui, sans-serif;
+  --radius: 14px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111713;
+    --panel: #19211c;
+    --panel-soft: #1d2a20;
+    --panel-tint: #182423;
+    --text: #e3eae1;
+    --heading: #d7ead0;
+    --muted: #a9b5a6;
+    --faint: #8f9b8c;
+    --border: #2a352d;
+    --track: #27322a;
+    --primary: #2f6143;
+    --on-primary: #eff6df;
+    --sage: #a3c97c;
+    --sage-text: #b7d993;
+    --good: #8fcf9c;
+    --warn: #f0b467;
+    --danger: #ff9b8f;
+    --chip-bg: #24331f;
+    --switch-off: #3a463d;
+    --leaf-pale: #6f7a62;
+    --leaf-pale-2: #858f76;
+    --stem-pale: #7d8873;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  font: 14px/1.45 var(--font);
+  color: var(--text);
+  background: var(--bg);
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { opacity: 0.55; cursor: wait; }
+:focus-visible { outline: 3px solid var(--sage); outline-offset: 2px; }
+a { color: var(--sage-text); }
+
+.brand {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 21px;
+  letter-spacing: -1px;
+  color: var(--heading);
+  text-decoration: none;
+}
+.brand-dot { color: var(--sage); }
+
+.eyebrow { font-size: 9px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+.muted { color: var(--muted); }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.panel h2 {
+  font-family: var(--display);
+  font-size: 16px;
+  letter-spacing: -0.3px;
+  color: var(--heading);
+  margin: 0 0 3px;
+}
+.panel .sub { margin: 0 0 12px; font-size: 11px; color: var(--muted); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+}
+.btn.outline { background: var(--panel); color: var(--heading); border-color: var(--border); }
+.btn.outline:hover { border-color: var(--sage); }
+.btn.danger { background: var(--panel); color: var(--danger); border-color: var(--border); }
+
+select, textarea, input[type="number"] {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 8px 10px;
+  font-size: 13px;
+}
+option { color: #293c33; background: #ffffff; }
+
+.chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--heading);
+}
+
+/* On/off switch (a real <button role="switch">) */
+.switch {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 0;
+  background: var(--switch-off);
+  transition: background 0.15s;
+  padding: 0;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s;
+}
+.switch[aria-checked="true"] { background: var(--primary); }
+.switch[aria-checked="true"]::after { transform: translateX(18px); }
+@media (prefers-reduced-motion: reduce) { .switch, .switch::after { transition: none; } }
+
+/* Small letter badge standing in for each AI (its chart color + initial) */
+.site-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+details > summary { cursor: pointer; font-size: 12px; color: var(--sage-text); font-weight: 600; }
+details p { font-size: 12px; color: var(--muted); margin: 6px 0 0; }

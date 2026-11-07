@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome to PromptPrint</title>
+  <link rel="icon" href="assets/icon32.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap">
+  <link rel="stylesheet" href="lib/ui.css">
+  <link rel="stylesheet" href="welcome.css">
+</head>
+<body>
+  <main>
+    <header class="topbar"><span class="brand">promptprint<span class="brand-dot">.</span></span></header>
+
+    <section class="hero">
+      <div class="eyebrow">Welcome</div>
+      <h1>Choose what PromptPrint may track<span class="brand-dot">.</span></h1>
+      <p class="muted">PromptPrint estimates the electricity, carbon and cooling water behind your AI chats. It needs your permission to read each AI website. Nothing is tracked until you allow it.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="what-title">
+      <h2 id="what-title">What PromptPrint reads, and what it keeps</h2>
+      <ul class="facts">
+        <li><strong>Reads:</strong> the messages on the AI sites you allow, while you use them in Chrome.</li>
+        <li><strong>Keeps:</strong> which AI, the date, the task category (like Math or Coding) and message lengths.</li>
+        <li><strong>Never keeps:</strong> your chat text. It's sorted into a category on your computer, then thrown away.</li>
+        <li><strong>Never sends:</strong> anything. All data stays in this browser.</li>
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="pick-title">
+      <div class="panel-head">
+        <div>
+          <h2 id="pick-title">Your AI platforms</h2>
+          <p class="sub">Tick the ones you use. Chrome will ask you to confirm.</p>
+        </div>
+        <button id="select-all" class="btn outline small">Select all</button>
+      </div>
+      <div id="site-list" class="site-list" role="group" aria-label="AI platforms to track"></div>
+      <button id="allow" class="btn allow">Allow tracking on selected platforms</button>
+      <p id="result" class="result" role="status"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="next-title">
+      <h2 id="next-title">Then</h2>
+      <ol class="steps">
+        <li>Pin PromptPrint: click the puzzle piece next to the address bar, then the pin next to PromptPrint.</li>
+        <li>Chat as usual. Open the PromptPrint icon to see your footprint.</li>
+        <li>Want older chats too? Use <strong>Import past chat history</strong> in the popup.</li>
+        <li>Change your mind anytime under <strong>Your connected platforms</strong> in the popup, or in Chrome's extension settings.</li>
+      </ol>
+    </section>
+  </main>
+  <script src="lib/constants.js"></script>
+  <script src="welcome.js"></script>
+</body>
+</html>

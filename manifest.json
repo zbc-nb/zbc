@@ -2,13 +2,13 @@
   "manifest_version": 3,
   "name": "PromptPrint – AI Carbon Tracker",
   "short_name": "PromptPrint",
-  "version": "0.7.0",
-  "description": "Tracks your AI chatbot usage (ChatGPT, Claude, Gemini, Perplexity, Copilot, DeepSeek, Grok, Mistral), estimates its carbon footprint, and suggests lower-impact alternatives.",
+  "version": "1.0.0",
+  "description": "Tracks your AI chatbot usage on the platforms you choose, estimates its electricity, carbon and cooling water, and suggests lower-impact alternatives.",
   "permissions": [
     "storage",
     "scripting"
   ],
-  "host_permissions": [
+  "optional_host_permissions": [
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
     "https://claude.ai/*",
@@ -22,25 +22,6 @@
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://chatgpt.com/*",
-        "https://chat.openai.com/*",
-        "https://claude.ai/*",
-        "https://gemini.google.com/*",
-        "https://www.perplexity.ai/*",
-        "https://copilot.microsoft.com/*",
-        "https://chat.deepseek.com/*",
-        "https://grok.com/*",
-        "https://chat.mistral.ai/*"
-      ],
-      "js": [
-        "content.js"
-      ],
-      "run_at": "document_idle"
-    }
-  ],
   "action": {
     "default_title": "PromptPrint",
     "default_popup": "popup.html",
