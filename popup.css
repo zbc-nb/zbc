@@ -1,18 +1,51 @@
+/* popup.css: the popup's layout. Colors, fonts, corners and shadows come from
+   the variables below, so each theme in lib/themes.css can restyle everything
+   by overriding them (plus a few extra rules). */
+
 :root {
   --bg: #f4f7f5;
+  --body-bg: var(--bg);
   --card: #ffffff;
   --text: #1c2b22;
   --muted: #5f6f66;
   --accent: #16804f;
   --accent-soft: #e3f3ea;
+  --total-bg: var(--accent-soft);
   --border: #dde5e0;
+  --track: var(--border);
   --danger: #b42318;
   --good: #16804f;
   --bad: #b54708;
+
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --heading-font: var(--font);
+  --radius: 10px;
+  --card-border: 1px solid var(--border);
+  --card-shadow: none;
+
+  --btn-bg: var(--accent);
+  --btn-text: #ffffff;
+  --btn-border: 0;
+  --btn-radius: 6px;
+  --btn-shadow: none;
+  --btn2-bg: transparent;
+  --btn2-text: var(--accent);
+  --btn2-border: 1px solid var(--border);
+  --input-bg: var(--bg);
+  --input-border: 1px solid var(--border);
+
+  /* plant */
+  --leaf: #4fa361;
+  --leaf-2: #7cc48b;
+  --stem: #3f8a4f;
+  --pot: #c9774f;
+  --pot-rim: #b5653f;
+  --wilt: #b39a52;
+  --wilt-2: #c9b46d;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]), :root[data-theme="default"] {
     --bg: #121815;
     --card: #1b2420;
     --text: #e6eee9;
@@ -23,18 +56,22 @@
     --danger: #f97066;
     --good: #4cc38a;
     --bad: #fdb022;
+    --btn-text: #0b1a12; /* dark text on the light green button stays readable */
   }
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
   width: 370px;
   margin: 0;
   padding: 12px;
-  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: var(--bg);
+  font: 13px/1.4 var(--font);
+  background: var(--body-bg);
+  background-color: var(--bg);
   color: var(--text);
+  min-height: 100%;
 }
 
 header {
@@ -43,21 +80,22 @@ header {
   gap: 8px;
   margin-bottom: 10px;
 }
-h1 { font-size: 16px; margin: 0; }
+h1 { font-size: 16px; margin: 0; font-family: var(--heading-font); }
+h2 { font-size: 13px; margin: 0 0 8px; font-family: var(--heading-font); }
 .period { margin-left: auto; font-size: 12px; padding: 4px 6px; }
-h2 { font-size: 13px; margin: 0 0 8px; }
 
 .card {
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
   padding: 12px;
   margin-bottom: 10px;
 }
 
-.total { background: var(--accent-soft); border-color: transparent; }
+.total { background: var(--total-bg); }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
-.big { font-size: 24px; font-weight: 700; color: var(--accent); line-height: 1.15; }
+.big { font-size: 24px; font-weight: 700; color: var(--accent); line-height: 1.15; font-family: var(--heading-font); }
 .muted { color: var(--muted); font-size: 12px; }
 .compare { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: 12px; font-weight: 600; }
 .compare select { width: 100%; }
@@ -69,21 +107,40 @@ h2 { font-size: 13px; margin: 0 0 8px; }
 
 .empty p { margin: 0 0 4px; }
 
-/* Pie chart (drawn with a CSS conic-gradient) */
+/* ---------- Plant & weekly budget ---------- */
+.garden-row { display: flex; gap: 12px; align-items: center; }
+.plant { width: 92px; height: 92px; flex-shrink: 0; }
+.garden-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.garden-info strong { font-size: 14px; font-family: var(--heading-font); }
+.budget-track { height: 8px; border-radius: 999px; background: var(--track); overflow: hidden; display: flex; margin-top: 2px; }
+.budget-fill { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.budget-fill.over { background: var(--bad); }
+.garden-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.streak { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--text); }
+.streak svg { color: var(--accent); }
+.budget-form { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+.budget-form input { width: 72px; }
+.habits { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+.habits summary { font-size: 12px; }
+.habit { display: flex; align-items: center; gap: 8px; margin-top: 7px; font-size: 12px; cursor: pointer; }
+.habit input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.habit .hint { margin-left: auto; color: var(--muted); }
+
+/* ---------- Pie chart (drawn with a CSS conic-gradient) ---------- */
 .pie-row { display: flex; align-items: center; gap: 14px; }
 .pie {
   width: 96px;
   height: 96px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: var(--border);
+  background: var(--track);
 }
 .legend { list-style: none; margin: 0; padding: 0; flex: 1; }
 .legend li { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
 .legend .pct { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); }
 .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 
-/* Category bars */
+/* ---------- Category bars ---------- */
 .bar-row { margin-bottom: 7px; }
 .bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 2px; }
 .bar-label span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -92,12 +149,12 @@ h2 { font-size: 13px; margin: 0 0 8px; }
   height: 10px;
   border-radius: 5px;
   overflow: hidden;
-  background: var(--border);
+  background: var(--track);
 }
 .bar-track span { display: block; height: 100%; }
 .bar-track span + span { border-left: 2px solid var(--card); }
 
-/* Daily emissions column chart */
+/* ---------- Daily emissions column chart ---------- */
 .daily {
   display: flex;
   align-items: flex-end;
@@ -121,9 +178,10 @@ h2 { font-size: 13px; margin: 0 0 8px; }
 .day .lbl { font-size: 10px; color: var(--muted); margin-top: 3px; }
 .daily.dense { gap: 2px; }
 .axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 3px; }
+.axis[hidden] { display: none; }
 .daily.dense .col { border-radius: 2px 2px 0 0; }
 
-/* Suggestions */
+/* ---------- Suggestions ---------- */
 .suggestions { list-style: none; margin: 0; padding: 0; }
 .suggestions li { padding: 8px 0; border-top: 1px solid var(--border); }
 .suggestions li:first-child { border-top: 0; padding-top: 0; }
@@ -131,33 +189,81 @@ h2 { font-size: 13px; margin: 0 0 8px; }
 .suggestions .alts { color: var(--muted); }
 .suggestions .save { color: var(--accent); font-size: 12px; margin-top: 3px; }
 
-/* Forms & buttons */
+/* ---------- Theme menu ---------- */
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.period { min-width: 0; max-width: 112px; }
+header h1 { white-space: nowrap; }
+.theme-menu { padding: 10px; }
+.theme-menu[hidden] { display: none; }
+.theme-menu h2 { display: flex; justify-content: space-between; align-items: baseline; }
+.theme-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  background: var(--card);
+  color: var(--text);
+}
+.theme-option input { position: absolute; opacity: 0; pointer-events: none; }
+.theme-option:has(input:checked) { outline: 2px solid var(--accent); outline-offset: -1px; font-weight: 700; }
+.theme-option:has(input:focus-visible) { outline: 3px solid var(--accent); }
+.theme-dots { display: inline-flex; flex-shrink: 0; }
+.theme-dots i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.25); display: block; }
+.theme-dots i + i { margin-left: -4px; }
+
+/* ---------- Forms & buttons ---------- */
 summary { cursor: pointer; font-weight: 600; }
 form { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-select, textarea {
+select, textarea, input[type="number"] {
   font: inherit;
   padding: 6px;
   border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: var(--input-border);
+  background: var(--input-bg);
   color: var(--text);
 }
+option { color: #1c2b22; background: #ffffff; }
 button {
   font: inherit;
   font-weight: 600;
   padding: 7px 10px;
-  border-radius: 6px;
-  border: 0;
-  background: var(--accent);
-  color: #fff;
+  border-radius: var(--btn-radius);
+  border: var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  box-shadow: var(--btn-shadow);
   cursor: pointer;
 }
 button.secondary {
-  background: transparent;
-  color: var(--accent);
-  border: 1px solid var(--border);
+  background: var(--btn2-bg);
+  color: var(--btn2-text);
+  border: var(--btn2-border);
+  box-shadow: none;
 }
 button.danger { color: var(--danger); }
+button.link {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 12px;
+  text-decoration: underline;
+}
 footer { display: flex; gap: 8px; }
 footer button { flex: 1; }
 footer #import-btn { flex: 1.6; }
@@ -165,4 +271,3 @@ footer #import-btn { flex: 1.6; }
 .load-btn:disabled { opacity: 0.6; cursor: wait; }
 .load-status { margin: 0 0 8px; font-size: 12px; color: var(--muted); text-align: center; }
 .fine { color: var(--muted); font-size: 11px; text-align: center; margin: 8px 0 0; }
-.axis[hidden] { display: none; }

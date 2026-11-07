@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <title>PromptPrint</title>
   <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="lib/themes.css">
+  <script src="lib/theme.js"></script>
 </head>
 <body>
   <header>
@@ -14,7 +16,15 @@
       <option value="30">Last 30 days</option>
       <option value="all">All time</option>
     </select>
+    <button id="theme-btn" class="secondary theme-btn" aria-expanded="false" aria-controls="theme-menu">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r="1.5"></circle><circle cx="17.5" cy="10.5" r="1.5"></circle><circle cx="8.5" cy="7.5" r="1.5"></circle><circle cx="6.5" cy="12.5" r="1.5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.56-2.5 5.56-5.55C21.96 6.01 17.46 2 12 2Z"></path></svg>
+    </button>
   </header>
+
+  <section id="theme-menu" class="card theme-menu" hidden>
+    <h2>Theme <span class="muted">Current: <strong id="theme-name">Default</strong></span></h2>
+    <div id="theme-grid" class="theme-grid" role="radiogroup" aria-label="Choose a theme"></div>
+  </section>
 
   <section class="card total">
     <div class="stats">
@@ -36,6 +46,32 @@
     </label>
     <div id="equivalent" class="equiv" aria-live="polite"></div>
     <div id="change" class="change"></div>
+  </section>
+
+  <section id="garden" class="card garden" aria-labelledby="plant-title">
+    <div class="garden-row">
+      <div id="plant" class="plant"></div>
+      <div class="garden-info">
+        <strong id="plant-title">Your plant</strong>
+        <span id="plant-text" class="muted"></span>
+        <div class="budget-track" role="img" id="budget-bar"><span id="budget-fill" class="budget-fill"></span></div>
+        <div class="garden-meta">
+          <span id="streak" class="streak"></span>
+          <button id="budget-edit" class="link" aria-expanded="false" aria-controls="budget-form">Change budget</button>
+        </div>
+        <form id="budget-form" class="budget-form" hidden>
+          <label for="budget-input" class="muted">Weekly g CO₂e</label>
+          <input id="budget-input" type="number" min="1" step="1" required>
+          <button type="submit">Save</button>
+        </form>
+      </div>
+    </div>
+    <details class="habits">
+      <summary>Habits that help (<span id="habit-count">0</span>/3)</summary>
+      <label class="habit"><input type="checkbox" data-habit="search"> Search the web first for quick facts</label>
+      <label class="habit"><input type="checkbox" data-habit="detail"> Ask once, in detail <span class="hint">fewer follow-ups</span></label>
+      <label class="habit"><input type="checkbox" data-habit="small"> Use a smaller model for easy questions</label>
+    </details>
   </section>
 
   <button id="map-btn" class="map-btn">🌍 Open the world map</button>

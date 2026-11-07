@@ -307,6 +307,184 @@ async function render() {
   renderCategories(shown);
   renderTimeline(current);
   renderSuggestions(shown);
+  renderGarden(events);
+}
+
+// ---------- Plant & weekly budget ----------
+// The plant reflects the last 7 days against a weekly CO₂ budget: thriving
+// under 80%, needs care up to 100%, wilting over budget.
+
+const DEFAULT_BUDGET_G = 20;
+
+// Suggest your recent weekly average (rounded up), so a normal week keeps the
+// plant healthy and using less makes it thrive. Used until you set your own.
+function suggestBudget(events) {
+  const now = Date.now();
+  const recent = events.filter((e) => e.timestamp > now - 28 * DAY);
+  if (!recent.length) return DEFAULT_BUDGET_G;
+  const spanDays = Math.max(7, Math.min(28, (now - Math.min(...recent.map((e) => e.timestamp))) / DAY));
+  const weekly = (sum(recent, (e) => e.gco2e) / spanDays) * 7;
+  if (weekly < 1) return Math.max(0.5, Math.ceil(weekly * 10) / 10);
+  return weekly < 20 ? Math.ceil(weekly) : Math.ceil(weekly / 5) * 5;
+}
+
+function plantSvg(state) {
+  const pot = `<ellipse cx="75" cy="141" rx="44" ry="5" style="fill:var(--track)"/>
+    <path d="M50 106 h50 l-7 32 h-36 z" style="fill:var(--pot)"/>
+    <rect x="46" y="98" width="58" height="11" rx="3" style="fill:var(--pot-rim)"/>`;
+  const shapes = {
+    seed: `<path d="M75 98 V80" style="stroke:var(--stem)" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <path d="M75 84 C 66 84, 60 78, 58 70 C 68 70, 74 75, 75 84 Z" style="fill:var(--leaf-2)"/>
+      <path d="M75 82 C 84 82, 90 76, 92 68 C 82 68, 76 73, 75 82 Z" style="fill:var(--leaf-2)"/>`,
+    thriving: `<path d="M75 98 V50" style="stroke:var(--stem)" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M75 80 C 52 80, 40 66, 38 48 C 58 48, 72 58, 75 80 Z" style="fill:var(--leaf)"/>
+      <path d="M75 72 C 96 72, 110 58, 112 40 C 92 40, 78 50, 75 72 Z" style="fill:var(--leaf)"/>
+      <path d="M75 58 C 60 54, 54 40, 56 26 C 70 30, 78 42, 75 58 Z" style="fill:var(--leaf-2)"/>
+      <path d="M75 54 C 88 48, 94 36, 92 22 C 80 28, 74 40, 75 54 Z" style="fill:var(--leaf-2)"/>`,
+    okay: `<path d="M75 98 C 75 80, 73 66, 76 54" style="stroke:var(--stem)" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M75 82 C 54 84, 42 74, 38 60 C 56 58, 70 66, 75 82 Z" style="fill:var(--leaf)"/>
+      <path d="M75 74 C 94 76, 106 66, 110 52 C 92 50, 79 58, 75 74 Z" style="fill:var(--leaf)"/>
+      <path d="M76 60 C 66 54, 62 44, 64 34 C 74 38, 78 48, 76 60 Z" style="fill:var(--leaf-2)"/>`,
+    wilting: `<path d="M75 98 C 75 84, 72 72, 84 64" style="stroke:var(--stem)" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M75 84 C 60 86, 48 98, 42 112 C 58 108, 71 98, 75 84 Z" style="fill:var(--wilt)"/>
+      <path d="M76 78 C 90 82, 102 94, 108 108 C 92 104, 80 94, 76 78 Z" style="fill:var(--wilt)"/>
+      <path d="M84 64 C 92 66, 98 74, 100 84 C 92 82, 86 74, 84 64 Z" style="fill:var(--wilt-2)"/>`,
+  };
+  const label = { seed: "A small sprout", thriving: "A healthy plant with four leaves", okay: "A plant with three leaves, starting to droop", wilting: "A wilting plant with drooping brown leaves" }[state];
+  return `<svg viewBox="0 0 150 150" width="92" height="92" role="img" aria-label="${label}">${pot}${shapes[state]}</svg>`;
+}
+
+function dayStart(t) {
+  const d = new Date(t);
+  d.setHours(0, 0, 0, 0);
+  return +d;
+}
+
+// Full days in a row (ending yesterday) with CO₂ at or under a day's share of
+// the weekly budget. Today isn't over, so it doesn't count yet. Days before
+// you installed PromptPrint don't count.
+function streakDays(events, budget, installedAt) {
+  const limit = budget / 7;
+  const first = dayStart(installedAt ?? Date.now());
+  const perDay = new Map();
+  for (const e of events) {
+    const d = dayStart(e.timestamp);
+    perDay.set(d, (perDay.get(d) ?? 0) + e.gco2e);
+  }
+  let streak = 0;
+  for (let d = dayStart(dayStart(Date.now()) - DAY / 2); d >= first; d = dayStart(d - DAY / 2)) {
+    if ((perDay.get(d) ?? 0) > limit) break;
+    streak++;
+  }
+  return streak;
+}
+
+async function renderGarden(events) {
+  const { budget: saved, installedAt, habits = {} } = await chrome.storage.local.get(["budget", "installedAt", "habits"]);
+  const budget = saved ?? suggestBudget(events);
+  const week = events.filter((e) => e.timestamp > Date.now() - 7 * DAY);
+  const used = sum(week, (e) => e.gco2e);
+  const ratio = used / budget;
+  const state = !events.length ? "seed" : ratio < 0.8 ? "thriving" : ratio <= 1 ? "okay" : "wilting";
+
+  $("plant").innerHTML = plantSvg(state);
+  $("plant-title").textContent = {
+    seed: "Plant a seed",
+    thriving: "Your plant is thriving",
+    okay: "Your plant needs a little care",
+    wilting: "Your plant is wilting",
+  }[state];
+  $("plant-text").textContent = events.length
+    ? `${PP.fmtGrams(used)} of your ${PP.fmtGrams(budget)} weekly budget${saved ? "" : " (suggested)"} · last 7 days`
+    : `Use AI and your plant grows while you stay under ${PP.fmtGrams(budget)} a week.`;
+
+  $("budget-fill").style.width = `${Math.min(ratio, 1) * 100}%`;
+  $("budget-fill").classList.toggle("over", ratio > 1);
+  $("budget-bar").setAttribute("aria-label", `${PP.fmtPct(Math.min(ratio, 9.99))} of weekly budget used`);
+
+  const streak = events.length ? streakDays(events, budget, installedAt) : 0;
+  $("streak").replaceChildren();
+  $("streak").insertAdjacentHTML("afterbegin",
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/></svg>');
+  $("streak").append(streak ? `${streak}-day streak` : `Start a streak: stay under ${PP.fmtGrams(budget / 7)} today`);
+  $("streak").title = `Days in a row at or under ${PP.fmtGrams(budget / 7)} (your daily share of the budget)`;
+
+  if (document.activeElement !== $("budget-input")) $("budget-input").value = Math.round(budget * 10) / 10;
+
+  let done = 0;
+  for (const box of document.querySelectorAll("[data-habit]")) {
+    box.checked = !!habits[box.dataset.habit];
+    if (box.checked) done++;
+  }
+  $("habit-count").textContent = done;
+}
+
+$("budget-edit").addEventListener("click", () => {
+  const form = $("budget-form");
+  form.hidden = !form.hidden;
+  $("budget-edit").setAttribute("aria-expanded", String(!form.hidden));
+  if (!form.hidden) $("budget-input").focus();
+});
+
+$("budget-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const value = Number($("budget-input").value);
+  if (!(value > 0)) return;
+  await chrome.storage.local.set({ budget: value });
+  $("budget-form").hidden = true;
+  $("budget-edit").setAttribute("aria-expanded", "false");
+  render();
+});
+
+for (const box of document.querySelectorAll("[data-habit]")) {
+  box.addEventListener("change", async () => {
+    const { habits = {} } = await chrome.storage.local.get("habits");
+    habits[box.dataset.habit] = box.checked;
+    await chrome.storage.local.set({ habits });
+    render();
+  });
+}
+
+// ---------- Theme menu ----------
+function setupThemeMenu() {
+  const nameOf = (id) => PPTheme.THEMES.find((t) => t.id === id)?.name ?? "Default";
+  const showCurrent = () => {
+    const name = nameOf(PPTheme.current());
+    $("theme-name").textContent = name;
+    $("theme-btn").setAttribute("aria-label", `Theme: ${name}. Change theme`);
+    $("theme-btn").title = `Theme: ${name}`;
+  };
+
+  $("theme-grid").replaceChildren(
+    ...PPTheme.THEMES.map((t) => {
+      const input = el("input", { type: "radio", name: "theme", value: t.id, checked: t.id === PPTheme.current() });
+      input.addEventListener("change", () => {
+        PPTheme.set(t.id);
+        showCurrent();
+      });
+      return el("label", { className: "theme-option" },
+        input,
+        el("span", { className: "theme-dots" }, ...t.dots.map((c) => el("i", { style: { background: c } }))),
+        t.name
+      );
+    })
+  );
+
+  $("theme-btn").addEventListener("click", () => {
+    const menu = $("theme-menu");
+    menu.hidden = !menu.hidden;
+    $("theme-btn").setAttribute("aria-expanded", String(!menu.hidden));
+    if (!menu.hidden) menu.querySelector("input:checked")?.focus();
+  });
+
+  // The saved theme may arrive a moment after opening; keep the label in sync.
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.theme) {
+      for (const r of document.querySelectorAll('input[name="theme"]')) r.checked = r.value === PPTheme.current();
+      showCurrent();
+    }
+  });
+  showCurrent();
 }
 
 // Restore the last period picked. With no choice saved yet, show "All time"
@@ -374,7 +552,7 @@ $("manual-form").addEventListener("submit", async (e) => {
 
 // Update live if new usage is tracked while the popup is open.
 chrome.storage.onChanged.addListener((changes) => {
-  if (changes.events || changes.country) render();
+  if (changes.events || changes.country || changes.budget) render();
 });
 
 $("manual-site").replaceChildren(
@@ -382,4 +560,5 @@ $("manual-site").replaceChildren(
 );
 
 setupEquivalentSelect();
+setupThemeMenu();
 setupPeriodSelect().then(render);

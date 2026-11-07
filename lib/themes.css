@@ -1,0 +1,452 @@
+/* lib/themes.css: the popup's visual themes. Each theme overrides the variables
+   defined at the top of popup.css, plus a few extra rules for its signature
+   effects. The theme is set on <html data-theme="..."> by lib/theme.js. */
+
+/* ============ 1. Skeuomorphism: real-world materials ============ */
+:root[data-theme="skeuo"] {
+  --bg: #d6cab3;
+  --body-bg: repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0 2px, transparent 2px 6px), linear-gradient(#e7dcc6, #c9bb9f);
+  --card: #f8f2e4;
+  --text: #3a2d1b;
+  --muted: #65553c;
+  --accent: #2f6b3a;
+  --accent-soft: #eae6c8;
+  --total-bg: linear-gradient(#f4eed6, #e2d9b6);
+  --border: #c4b28c;
+  --track: #d9ccaf;
+  --font: Georgia, "Times New Roman", serif;
+  --radius: 10px;
+  --card-border: 1px solid #b29f78;
+  --card-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 3px 6px rgba(60,40,10,0.28);
+  --btn-bg: linear-gradient(#56a163, #2f6b3a);
+  --btn-border: 1px solid #22502b;
+  --btn-radius: 8px;
+  --btn-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 2px 3px rgba(0,0,0,0.3);
+  --btn2-bg: linear-gradient(#fcf8ee, #e4d9c1);
+  --btn2-text: #3a2d1b;
+  --btn2-border: 1px solid #b29f78;
+  --input-bg: linear-gradient(#fffdf6, #f1e9d6);
+  --input-border: 1px solid #b29f78;
+}
+:root[data-theme="skeuo"] h1 { text-shadow: 0 1px 0 #fff; }
+:root[data-theme="skeuo"] .bar-track,
+:root[data-theme="skeuo"] .budget-track { box-shadow: inset 0 1px 3px rgba(0,0,0,0.35); }
+:root[data-theme="skeuo"] .day .col { background: linear-gradient(#56a163, #2f6b3a); box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+
+/* ============ 2. Flat design: solid color, no depth ============ */
+:root[data-theme="flat"] {
+  --bg: #ecf0f1;
+  --card: #ffffff;
+  --text: #2c3e50;
+  --muted: #566573;
+  --accent: #117a65;
+  --accent-soft: #d1f2eb;
+  --total-bg: #117a65;
+  --border: #d5dbdb;
+  --track: #e5e8e8;
+  --font: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --radius: 4px;
+  --card-border: 0;
+  --btn-bg: #2c3e50;
+  --btn-radius: 4px;
+  --btn2-bg: #ffffff;
+  --btn2-text: #2c3e50;
+  --btn2-border: 0;
+  --input-border: 0;
+  --input-bg: #ffffff;
+  --leaf: #27ae60; --leaf-2: #2ecc71; --stem: #1e8449; --pot: #e67e22; --pot-rim: #d35400;
+}
+:root[data-theme="flat"] .total, :root[data-theme="flat"] .total .big,
+:root[data-theme="flat"] .total .equiv, :root[data-theme="flat"] .total .compare { color: #ffffff; }
+:root[data-theme="flat"] .total .muted, :root[data-theme="flat"] .total .change { color: #d4f5ec; }
+:root[data-theme="flat"] .map-btn { background: #e67e22; color: #1b2631; }
+
+/* ============ 3. Material design: paper layers and elevation ============ */
+:root[data-theme="material"] {
+  --bg: #f3f6ef;
+  --card: #ffffff;
+  --text: #1a1c18;
+  --muted: #43483f;
+  --accent: #386a20;
+  --accent-soft: #d8e8cc;
+  --border: #c3c8bb;
+  --track: #e1e4da;
+  --font: Roboto, "Segoe UI", system-ui, sans-serif;
+  --radius: 12px;
+  --card-border: 0;
+  --card-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
+  --btn-radius: 20px;
+  --btn-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
+  --btn2-border: 1px solid #74796d;
+  --input-bg: #ffffff;
+  --input-border: 1px solid #74796d;
+}
+:root[data-theme="material"] .total { box-shadow: none; }
+:root[data-theme="material"] button { letter-spacing: 0.1px; transition: box-shadow 0.2s; }
+:root[data-theme="material"] button:hover { box-shadow: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3); }
+
+/* ============ 4. Neumorphism: soft extruded surfaces ============ */
+:root[data-theme="neumorph"] {
+  --bg: #e0e5ec;
+  --card: #e0e5ec;
+  --text: #2f3349;
+  --muted: #555b73;
+  --accent: #1f6f55;
+  --accent-soft: #e0e5ec;
+  --border: #c8d0db;
+  --track: #e0e5ec;
+  --font: Poppins, "Segoe UI", system-ui, sans-serif;
+  --radius: 18px;
+  --card-border: 0;
+  --card-shadow: 8px 8px 16px #a3b1c6, -8px -8px 16px #ffffff;
+  --btn-bg: #e0e5ec;
+  --btn-text: #1f6f55;
+  --btn-radius: 12px;
+  --btn-shadow: 5px 5px 10px #a3b1c6, -5px -5px 10px #ffffff;
+  --btn2-bg: #e0e5ec;
+  --btn2-text: #2f3349;
+  --btn2-border: 0;
+  --input-bg: #e0e5ec;
+  --input-border: 0;
+}
+:root[data-theme="neumorph"] button.secondary { box-shadow: 5px 5px 10px #a3b1c6, -5px -5px 10px #ffffff; }
+:root[data-theme="neumorph"] button:active { box-shadow: inset 4px 4px 8px #a3b1c6, inset -4px -4px 8px #ffffff; }
+:root[data-theme="neumorph"] select, :root[data-theme="neumorph"] textarea, :root[data-theme="neumorph"] input[type="number"],
+:root[data-theme="neumorph"] .bar-track, :root[data-theme="neumorph"] .budget-track {
+  box-shadow: inset 3px 3px 6px #a3b1c6, inset -3px -3px 6px #ffffff;
+}
+:root[data-theme="neumorph"] .theme-option { border: 0; box-shadow: 3px 3px 6px #a3b1c6, -3px -3px 6px #ffffff; background: #e0e5ec; }
+
+/* ============ 5. Glassmorphism: frosted glass over color ============ */
+:root[data-theme="glass"] {
+  --bg: #4b2fa0;
+  --body-bg: radial-gradient(circle at 12% 18%, rgba(233,78,155,0.85) 0, transparent 42%),
+             radial-gradient(circle at 88% 38%, rgba(46,197,255,0.7) 0, transparent 40%),
+             radial-gradient(circle at 40% 92%, rgba(255,140,66,0.6) 0, transparent 42%),
+             linear-gradient(135deg, #3b2a8f, #8e2de2);
+  --card: rgba(255,255,255,0.16);
+  --text: #ffffff;
+  --muted: rgba(255,255,255,0.86);
+  --accent: #ffffff;
+  --accent-soft: rgba(255,255,255,0.2);
+  --border: rgba(255,255,255,0.35);
+  --track: rgba(255,255,255,0.22);
+  --good: #b9ffd9;
+  --bad: #ffd7a8;
+  --danger: #ffc2c2;
+  --font: Inter, "Segoe UI", system-ui, sans-serif;
+  --radius: 16px;
+  --card-border: 1px solid rgba(255,255,255,0.4);
+  --card-shadow: 0 8px 32px rgba(20,10,80,0.3);
+  --btn-bg: rgba(255,255,255,0.26);
+  --btn-text: #ffffff;
+  --btn-border: 1px solid rgba(255,255,255,0.55);
+  --btn-radius: 12px;
+  --btn2-bg: rgba(255,255,255,0.1);
+  --btn2-text: #ffffff;
+  --btn2-border: 1px solid rgba(255,255,255,0.45);
+  --input-bg: rgba(255,255,255,0.18);
+  --input-border: 1px solid rgba(255,255,255,0.45);
+}
+:root[data-theme="glass"] body { text-shadow: 0 1px 2px rgba(20,10,60,0.35); }
+:root[data-theme="glass"] .card, :root[data-theme="glass"] button { backdrop-filter: blur(14px) saturate(140%); }
+:root[data-theme="glass"] .bar-track span + span { border-left-color: rgba(255,255,255,0.5); }
+
+/* ============ 6. Claymorphism: puffy, toy-like 3D ============ */
+:root[data-theme="clay"] {
+  --bg: #f1e6ff;
+  --card: #fff6fb;
+  --text: #36264a;
+  --muted: #64527a;
+  --accent: #6f35d6;
+  --accent-soft: #ece0ff;
+  --total-bg: #ffe7a6;
+  --border: #e6d6f7;
+  --track: #eadcfb;
+  --font: Nunito, "Segoe UI", system-ui, sans-serif;
+  --radius: 28px;
+  --card-border: 0;
+  --card-shadow: 10px 10px 22px rgba(150,110,200,0.35), inset -6px -6px 12px rgba(150,110,200,0.18), inset 6px 6px 12px rgba(255,255,255,0.9);
+  --btn-bg: #7b45e6;
+  --btn-radius: 18px;
+  --btn-shadow: 6px 6px 12px rgba(111,53,214,0.35), inset -3px -3px 6px rgba(0,0,0,0.18), inset 3px 3px 6px rgba(255,255,255,0.35);
+  --btn2-bg: #ffffff;
+  --btn2-text: #4b2a8a;
+  --btn2-border: 0;
+  --input-bg: #ffffff;
+  --input-border: 0;
+  --leaf: #4cc26a; --leaf-2: #8be09d; --pot: #ff8fab; --pot-rim: #ff6f91;
+}
+:root[data-theme="clay"] body { font-weight: 600; }
+:root[data-theme="clay"] button.secondary { box-shadow: 5px 5px 10px rgba(150,110,200,0.3), inset -3px -3px 6px rgba(150,110,200,0.15); }
+:root[data-theme="clay"] .bar-track, :root[data-theme="clay"] .budget-track, :root[data-theme="clay"] .day .col { border-radius: 999px; }
+:root[data-theme="clay"] .theme-option { border: 0; border-radius: 16px; box-shadow: 4px 4px 8px rgba(150,110,200,0.25); }
+
+/* ============ 7. Liquid glass: glass that moves and catches light ============ */
+:root[data-theme="liquid"] {
+  --bg: #b8d4f5;
+  --body-bg: linear-gradient(120deg, #a1c4fd, #c2e9fb, #fbc2eb, #a6c1ee, #a1c4fd);
+  --card: rgba(255,255,255,0.38);
+  --text: #0f2138;
+  --muted: #2b4360;
+  --accent: #0b4fb8;
+  --accent-soft: rgba(255,255,255,0.45);
+  --border: rgba(255,255,255,0.75);
+  --track: rgba(255,255,255,0.55);
+  --font: Inter, -apple-system, "Segoe UI", system-ui, sans-serif;
+  --radius: 22px;
+  --card-border: 1px solid rgba(255,255,255,0.75);
+  --card-shadow: inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(255,255,255,0.35), 0 10px 30px rgba(30,60,120,0.18);
+  --btn-bg: rgba(255,255,255,0.6);
+  --btn-text: #0a3d8f;
+  --btn-border: 1px solid rgba(255,255,255,0.9);
+  --btn-radius: 999px;
+  --btn-shadow: inset 0 1px 0 #ffffff, 0 4px 14px rgba(30,60,120,0.2);
+  --btn2-bg: rgba(255,255,255,0.3);
+  --btn2-text: #0a3d8f;
+  --btn2-border: 1px solid rgba(255,255,255,0.8);
+  --input-bg: rgba(255,255,255,0.55);
+  --input-border: 1px solid rgba(255,255,255,0.9);
+}
+:root[data-theme="liquid"] body { background-size: 400% 400%; animation: pp-liquid 18s ease-in-out infinite; }
+:root[data-theme="liquid"] .card {
+  backdrop-filter: blur(20px) saturate(180%);
+  background-image: linear-gradient(115deg, rgba(255,255,255,0.55), rgba(255,255,255,0.08) 45%, rgba(255,255,255,0.3));
+}
+:root[data-theme="liquid"] button { backdrop-filter: blur(12px) saturate(180%); transition: transform 0.25s, box-shadow 0.25s; }
+:root[data-theme="liquid"] button:hover { transform: translateY(-1px) scale(1.01); box-shadow: inset 0 1px 0 #fff, 0 8px 22px rgba(30,60,120,0.28); }
+@keyframes pp-liquid { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@media (prefers-reduced-motion: reduce) { :root[data-theme="liquid"] body { animation: none; } }
+
+/* ============ 8. Neo-brutalism: thick borders, hard shadows, loud color ============ */
+:root[data-theme="neobrutal"] {
+  --bg: #fff4d6;
+  --card: #ffffff;
+  --text: #111111;
+  --muted: #333333;
+  --accent: #d1004f;
+  --accent-soft: #ffde59;
+  --total-bg: #ffde59;
+  --border: #111111;
+  --track: #f0e6c8;
+  --bad: #a33a00;
+  --font: "Space Grotesk", "Arial Black", system-ui, sans-serif;
+  --radius: 6px;
+  --card-border: 3px solid #111111;
+  --card-shadow: 5px 5px 0 #111111;
+  --btn-bg: #5ce1e6;
+  --btn-text: #111111;
+  --btn-border: 3px solid #111111;
+  --btn-radius: 6px;
+  --btn-shadow: 3px 3px 0 #111111;
+  --btn2-bg: #ffffff;
+  --btn2-text: #111111;
+  --btn2-border: 3px solid #111111;
+  --input-bg: #ffffff;
+  --input-border: 2px solid #111111;
+}
+:root[data-theme="neobrutal"] h2 { text-transform: uppercase; letter-spacing: 0.5px; }
+:root[data-theme="neobrutal"] button.secondary { box-shadow: 3px 3px 0 #111111; }
+:root[data-theme="neobrutal"] button:active { transform: translate(3px, 3px); box-shadow: none; }
+:root[data-theme="neobrutal"] .bar-track, :root[data-theme="neobrutal"] .budget-track { border: 2px solid #111111; border-radius: 4px; }
+:root[data-theme="neobrutal"] .theme-option { border: 2px solid #111111; }
+:root[data-theme="neobrutal"] .map-btn { background: #ff90e8; }
+
+/* ============ 9. Minimalism: whitespace, nothing extra ============ */
+:root[data-theme="minimal"] {
+  --bg: #ffffff;
+  --card: #ffffff;
+  --text: #111111;
+  --muted: #666666;
+  --accent: #111111;
+  --accent-soft: #ffffff;
+  --border: #e8e8e8;
+  --track: #f0f0f0;
+  --font: Inter, "Helvetica Neue", Arial, sans-serif;
+  --radius: 0;
+  --card-border: 0;
+  --btn-bg: #111111;
+  --btn-radius: 0;
+  --btn2-text: #111111;
+  --btn2-border: 1px solid #111111;
+  --input-bg: #ffffff;
+  --input-border: 1px solid #dddddd;
+  --leaf: #2f2f2f; --leaf-2: #8a8a8a; --stem: #2f2f2f; --pot: #d9d9d9; --pot-rim: #bdbdbd;
+}
+:root[data-theme="minimal"] body { padding: 18px; }
+:root[data-theme="minimal"] .card { border-bottom: 1px solid #ececec; padding: 16px 0; margin-bottom: 0; }
+:root[data-theme="minimal"] .big { font-weight: 300; font-size: 30px; letter-spacing: -0.5px; }
+:root[data-theme="minimal"] h2 { font-weight: 500; text-transform: uppercase; letter-spacing: 1.5px; font-size: 11px; color: #666666; }
+:root[data-theme="minimal"] .map-btn, :root[data-theme="minimal"] .load-btn { margin-top: 12px; }
+
+/* ============ 10. Bauhaus: geometry and primary colors ============ */
+:root[data-theme="bauhaus"] {
+  --bg: #efe8da;
+  --card: #fbf8f1;
+  --text: #1d1d1b;
+  --muted: #47473f;
+  --accent: #1d1d1b;
+  --accent-soft: #f2c300;
+  --total-bg: #f2c300;
+  --border: #1d1d1b;
+  --track: #e2dccd;
+  --font: Jost, Futura, "Century Gothic", sans-serif;
+  --radius: 0;
+  --card-border: 3px solid #1d1d1b;
+  --btn-bg: #1f4e9c;
+  --btn-radius: 0;
+  --btn2-bg: #fbf8f1;
+  --btn2-text: #1d1d1b;
+  --btn2-border: 3px solid #1d1d1b;
+  --input-bg: #fbf8f1;
+  --input-border: 2px solid #1d1d1b;
+  --leaf: #1f4e9c; --leaf-2: #3a72d1; --stem: #1d1d1b; --pot: #d7261e; --pot-rim: #a81b15;
+}
+:root[data-theme="bauhaus"] h1 { text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+:root[data-theme="bauhaus"] h2 { text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 7px; }
+:root[data-theme="bauhaus"] h2::before { content: ""; width: 11px; height: 11px; background: #d7261e; border-radius: 50%; flex-shrink: 0; }
+:root[data-theme="bauhaus"] .card:nth-of-type(3n+1) h2::before { background: #f2c300; border-radius: 0; }
+:root[data-theme="bauhaus"] .card:nth-of-type(3n+2) h2::before { background: #1f4e9c; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+:root[data-theme="bauhaus"] .map-btn { background: #d7261e; }
+:root[data-theme="bauhaus"] .day .col { background: #1f4e9c; border-radius: 0; }
+
+/* ============ 11. Retrofuturism: neon synthwave ============ */
+:root[data-theme="retro"] {
+  --bg: #12002e;
+  --body-bg: repeating-linear-gradient(0deg, rgba(0,240,255,0.08) 0 1px, transparent 1px 22px),
+             repeating-linear-gradient(90deg, rgba(247,37,133,0.08) 0 1px, transparent 1px 22px),
+             linear-gradient(#12002e 0%, #24004f 60%, #4a0a6b 100%);
+  --card: rgba(18,0,46,0.82);
+  --text: #f5e9ff;
+  --muted: #cdb8ec;
+  --accent: #00f0ff;
+  --accent-soft: rgba(0,240,255,0.08);
+  --border: rgba(0,240,255,0.45);
+  --track: rgba(255,255,255,0.12);
+  --good: #7dffb2;
+  --bad: #ffb35c;
+  --danger: #ff7aa8;
+  --font: "Share Tech Mono", "Courier New", monospace;
+  --heading-font: Orbitron, "Share Tech Mono", monospace;
+  --radius: 4px;
+  --card-border: 1px solid #00f0ff;
+  --card-shadow: 0 0 12px rgba(0,240,255,0.4), inset 0 0 14px rgba(247,37,133,0.2);
+  --btn-bg: #f72585;
+  --btn-text: #12002e;
+  --btn-radius: 2px;
+  --btn-shadow: 0 0 14px rgba(247,37,133,0.65);
+  --btn2-bg: transparent;
+  --btn2-text: #00f0ff;
+  --btn2-border: 1px solid #00f0ff;
+  --input-bg: #1d0745;
+  --input-border: 1px solid #00f0ff;
+  --leaf: #00f0ff; --leaf-2: #f72585; --stem: #7dfcff; --pot: #7209b7; --pot-rim: #560bad;
+}
+:root[data-theme="retro"] h1 { color: #ff6ec7; text-shadow: 0 0 8px #f72585; letter-spacing: 2px; }
+:root[data-theme="retro"] .big { text-shadow: 0 0 10px rgba(0,240,255,0.7); }
+:root[data-theme="retro"] .day .col { box-shadow: 0 0 8px rgba(0,240,255,0.7); }
+
+/* ============ 12. Brutalism: raw, unstyled structure ============ */
+:root[data-theme="brutal"] {
+  --bg: #ffffff;
+  --card: #ffffff;
+  --text: #000000;
+  --muted: #333333;
+  --accent: #0000ee;
+  --accent-soft: #ffffff;
+  --border: #000000;
+  --track: #dddddd;
+  --font: "Times New Roman", Times, serif;
+  --heading-font: "Courier New", Courier, monospace;
+  --radius: 0;
+  --card-border: 1px solid #000000;
+  --btn-bg: #ffffff;
+  --btn-text: #000000;
+  --btn-border: 1px solid #000000;
+  --btn-radius: 0;
+  --btn2-bg: #ffffff;
+  --btn2-text: #000000;
+  --btn2-border: 1px solid #000000;
+  --input-bg: #ffffff;
+  --input-border: 1px solid #000000;
+  --leaf: #000000; --leaf-2: #555555; --stem: #000000; --pot: #ffffff; --pot-rim: #000000;
+}
+:root[data-theme="brutal"] h1, :root[data-theme="brutal"] h2 { text-transform: uppercase; }
+:root[data-theme="brutal"] h1 { font-size: 20px; }
+:root[data-theme="brutal"] .big { color: #000000; font-family: "Courier New", Courier, monospace; }
+:root[data-theme="brutal"] button { text-decoration: underline; font-weight: 400; }
+:root[data-theme="brutal"] .day .col, :root[data-theme="brutal"] .budget-fill { background: #000000; border-radius: 0; }
+
+/* ============ 13. Anti-design: deliberate chaos (still readable) ============ */
+:root[data-theme="anti"] {
+  --bg: #00e06c;
+  --body-bg: repeating-linear-gradient(-45deg, #00e06c 0 18px, #ffe600 18px 36px);
+  --card: #ffffff;
+  --text: #111111;
+  --muted: #3b3b3b;
+  --accent: #e0004d;
+  --accent-soft: #ffffff;
+  --total-bg: #ffffff;
+  --border: #111111;
+  --track: #e6e6e6;
+  --font: "Courier New", Courier, monospace;
+  --heading-font: Bungee, Impact, sans-serif;
+  --radius: 0;
+  --card-border: 3px dashed #0000ff;
+  --btn-bg: #0000ff;
+  --btn-text: #ffff00;
+  --btn-radius: 22px 0 22px 0;
+  --btn2-bg: #ff00aa;
+  --btn2-text: #ffffff;
+  --btn2-border: 2px solid #111111;
+  --input-bg: #ffffff;
+  --input-border: 2px solid #111111;
+  --leaf: #ff00aa; --leaf-2: #0000ff; --pot: #ffe600; --pot-rim: #111111;
+}
+:root[data-theme="anti"] .card:nth-of-type(odd) { transform: rotate(-1.3deg); }
+:root[data-theme="anti"] .card:nth-of-type(even) { transform: rotate(1deg); border: 6px double #e0004d; }
+:root[data-theme="anti"] h1 { font-family: Bungee, Impact, sans-serif; transform: skew(-8deg); }
+:root[data-theme="anti"] h2 { font-family: "Times New Roman", serif; font-style: italic; font-size: 16px; }
+:root[data-theme="anti"] .big { font-family: Impact, "Arial Black", sans-serif; letter-spacing: 1px; }
+
+/* ============ 14. Acid graphics: chrome, acid green, psychedelic ============ */
+:root[data-theme="acid"] {
+  --bg: #050505;
+  --body-bg: radial-gradient(circle at 18% 8%, rgba(198,255,0,0.22) 0, transparent 34%),
+             radial-gradient(circle at 92% 70%, rgba(255,0,229,0.18) 0, transparent 36%),
+             repeating-radial-gradient(circle at 80% 95%, #121212 0 5px, #050505 5px 11px);
+  --card: #0d0d0d;
+  --text: #f2f2f2;
+  --muted: #b8b8b8;
+  --accent: #c6ff00;
+  --accent-soft: rgba(198,255,0,0.08);
+  --border: #2c2c2c;
+  --track: #222222;
+  --good: #c6ff00;
+  --bad: #ff9de2;
+  --danger: #ff7a7a;
+  --font: "Space Grotesk", system-ui, sans-serif;
+  --heading-font: Syne, "Space Grotesk", sans-serif;
+  --radius: 14px;
+  --card-border: 1px solid transparent;
+  --btn-bg: linear-gradient(120deg, #c6ff00, #00e5ff);
+  --btn-text: #050505;
+  --btn-radius: 999px;
+  --btn2-bg: #0d0d0d;
+  --btn2-text: #c6ff00;
+  --btn2-border: 1px solid #c6ff00;
+  --input-bg: #161616;
+  --input-border: 1px solid #3a3a3a;
+  --leaf: #c6ff00; --leaf-2: #00e5ff; --stem: #e5e5e5; --pot: #ff00e5; --pot-rim: #b000a0;
+}
+:root[data-theme="acid"] .card {
+  background: linear-gradient(#0d0d0d, #0d0d0d) padding-box, linear-gradient(120deg, #c6ff00, #ff00e5, #00e5ff) border-box;
+}
+:root[data-theme="acid"] h1 { font-weight: 800; letter-spacing: -0.5px; }
+:root[data-theme="acid"] .big {
+  font-weight: 800;
+  background: linear-gradient(90deg, #ffffff, #9a9a9a 40%, #ffffff 60%, #c6ff00);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

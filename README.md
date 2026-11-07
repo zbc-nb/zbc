@@ -15,6 +15,12 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 - **Suggestions:** alternatives for your most common AI tasks, with estimated savings
 - **Private:** everything stays in your browser. The text of your prompts is never saved; only the category is.
 
+## Plant, budget & themes
+- **Your plant** reflects the last 7 days against a weekly CO₂ budget: thriving under 80%, needs care up to 100%, wilting over. The budget starts as your recent weekly average (marked "suggested"); set your own with **Change budget**. The streak counts full days in a row under a day's share of the budget. **Habits that help** is a checklist of pledges saved in the browser.
+- **Themes:** the palette button in the popup header opens 15 themes (Default plus 14 styles: skeuomorphic, flat, material, neumorphism, glass, clay, liquid glass, neo-brutalism, minimal, Bauhaus, retrofuturism, brutalism, anti-design, acid). Themes live in `lib/themes.css` (one block of variables each) and `lib/theme.js` (list, fonts, saving). The map and import pages keep the default look.
+
+![All themes](docs/theme-demos.png)
+
 ## Supported AI sites
 | Site | Live tracking | Reply length measured | Load data | History import |
 |---|---|---|---|---|
