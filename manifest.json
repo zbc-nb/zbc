@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PromptPrint – AI Carbon Tracker",
   "short_name": "PromptPrint",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Tracks your AI chatbot usage (ChatGPT, Claude, Gemini, Perplexity, Copilot, DeepSeek, Grok, Mistral), estimates its carbon footprint, and suggests lower-impact alternatives.",
   "permissions": [
     "storage",

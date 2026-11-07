@@ -20,7 +20,7 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 |---|---|---|---|---|
 | ChatGPT (chatgpt.com) | ✅ | ✅ | ✅ | ✅ |
 | Claude (claude.ai) | ✅ | ✅ | ✅ | ✅ |
-| Gemini (gemini.google.com) | ✅ | ✅ | ✅ | ✅ (experimental) |
+| Gemini (gemini.google.com) | ✅ | ✅ | ✅ | ✅ |
 | Perplexity, Copilot, DeepSeek, Grok, Mistral Le Chat | ✅ (counted when you press send) | ❌ typical length assumed | ❌ | ❌ |
 
 **Not trackable live:** the phone and desktop apps, and any browser without the extension. Their chats *are* included in each AI's data export, so **Import past chat history** covers them for ChatGPT, Claude and Gemini.
@@ -64,7 +64,7 @@ Right now each person's data stays in their own browser, so the map shows only *
 ## Past history (before installing)
 Live tracking only sees prompts sent after installing. For older chats, use **Import my real chat history** in the popup. It reads the export ZIPs from ChatGPT (Settings → Data controls → Export data), Claude (Settings → Privacy → Export data) and Google Takeout (My Activity → Gemini Apps, JSON format). Only chats from before the install date are imported, and re-importing never double-counts.
 
-These export formats aren't officially documented, so the parsers in `import.js` were written to the commonly seen structure and tested with sample files, not with real exports. If an import finds 0 prompts, compare the real file to the parser and adjust it.
+These export formats aren't officially documented. The Gemini importer has been confirmed with a real Google Takeout export; the ChatGPT and Claude parsers follow the commonly seen structure and were tested with sample files. If an import finds 0 prompts, compare the real file to the parser in `import.js` and adjust it.
 
 ## Methodology
 No AI company publishes exact per-prompt figures for every model, so these are **transparent estimates**:
