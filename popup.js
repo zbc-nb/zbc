@@ -72,7 +72,7 @@ function renderTotals(week, lastWeek) {
   $("total-wh").textContent = PP.fmtWh(wh);
   $("total-range").textContent =
     `${PP.fmtGrams(g * UNCERTAINTY.low)}–${PP.fmtGrams(g * UNCERTAINTY.high)} CO₂e`;
-  $("total-prompts").textContent = week.length;
+  $("total-prompts").textContent = week.length.toLocaleString();
   renderEquivalent();
 
   const prev = sum(lastWeek, (e) => e.gco2e);
@@ -133,7 +133,7 @@ function renderPie(week) {
       el("li", {},
         el("span", { className: "swatch", style: { background: info.color } }),
         info.name,
-        el("span", { className: "pct" }, `${Math.round(share * 100)}%`)
+        el("span", { className: "pct" }, `${count.toLocaleString()} · ${PP.fmtPct(share)}`)
       )
     );
   }
@@ -240,11 +240,11 @@ function buildSuggestions(week) {
 
     const topSite = Object.entries(groupBy(events, "site")).sort((a, b) => b[1].length - a[1].length)[0];
     const siteName = SITE_INFO[topSite[0]].name;
-    const siteShare = Math.round((topSite[1].length / events.length) * 100);
+    const siteShare = PP.fmtPct(topSite[1].length / events.length);
     const halfSaved = sum(events, (e) => e.gco2e) / 2;
 
     tips.push({
-      title: `${Math.round(share * 100)}% of your prompts are ${category.toLowerCase()} (${siteShare}% of those on ${siteName}).`,
+      title: `${PP.fmtPct(share)} of your prompts are ${category.toLowerCase()} (${siteShare} of those on ${siteName}).`,
       alts: `Try: ${alts.join(", ")}.`,
       save: `Doing half of these another way would have saved ≈ ${PP.fmtGrams(halfSaved)} CO₂e ${currentPeriod().name}.`,
     });

@@ -26,7 +26,8 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-const pct = (x) => `${Math.round(x * 100)}%`;
+const pct = (x) => PP.fmtPct(x); // text: keeps small shares visible (0.3%, not 0%)
+const width = (x) => `${x * 100}%`; // exact bar width
 const home = () => PP.gridById.get(state.homeId) ?? AVERAGE;
 const co2On = (grid) => ((state.mine?.wh ?? 0) / 1000) * grid;
 
@@ -163,7 +164,7 @@ function siteStack() {
   const sites = Object.keys(PP.SITES).filter((s) => state.mine.sites[s]);
   return [
     el("div", { className: "stack", role: "img", "aria-label": sites.map((s) => `${PP.SITES[s].name} ${pct(state.mine.sites[s] / total)}`).join(", ") },
-      ...sites.map((s) => el("span", { title: `${PP.SITES[s].name}: ${state.mine.sites[s]} prompts`, style: { width: pct(state.mine.sites[s] / total), background: PP.siteColor(s) } }))
+      ...sites.map((s) => el("span", { title: `${PP.SITES[s].name}: ${state.mine.sites[s]} prompts`, style: { width: width(state.mine.sites[s] / total), background: PP.siteColor(s) } }))
     ),
     el("ul", { className: "stack-legend" },
       ...sites.map((s) => el("li", {}, el("span", { className: "swatch", style: { background: PP.siteColor(s) } }), `${PP.SITES[s].name} ${pct(state.mine.sites[s] / total)}`))
