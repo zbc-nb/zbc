@@ -127,7 +127,23 @@ function parseGemini(records) {
     }));
 }
 
+// Claude's newer export first gives a small "manifest" file that lists several
+// ZIPs to download; the chats are in the "conversations" one(s).
+class ManifestError extends Error {
+  constructor(links) {
+    super("This is Claude's list of download links, not your chats.");
+    this.links = links;
+  }
+}
+
 function detectAndParse(json) {
+  if (json && !Array.isArray(json)) {
+    if (Array.isArray(json.data_files)) {
+      throw new ManifestError(json.data_files.filter((f) => /conversation/i.test(f.category ?? f.filename ?? "")));
+    }
+    // A single conversation per file, or { conversations: [...] }.
+    json = Array.isArray(json.conversations) ? json.conversations : [json];
+  }
   if (!Array.isArray(json) || json.length === 0) return { site: null, items: [] };
   const sample = json.find((x) => x && typeof x === "object") ?? {};
   if ("mapping" in sample) return { site: "ChatGPT", items: parseChatGPT(json) };
@@ -138,14 +154,30 @@ function detectAndParse(json) {
 
 // ---------- Handling dropped / chosen files ----------
 
-const WANTED = /(^|\/)(conversations\.json|my ?activity\.json)$/i;
+// Files inside an export ZIP that hold chats: conversations.json, or any
+// .json / .jsonl file in or named after "conversations", or Google's MyActivity.json.
+const WANTED = /(conversation[^/]*\/.*\.jsonl?$|(^|\/)conversations[^/]*\.jsonl?$|(^|\/)my ?activity\.json$)/i;
 
 async function jsonTextsFrom(file) {
-  if (/\.json$/i.test(file.name)) return [await file.text()];
+  if (/\.jsonl?$/i.test(file.name)) return [await file.text()];
   const zip = await openZip(file);
   const matches = zip.entries.filter((e) => WANTED.test(e.name));
-  if (!matches.length) throw new Error("No conversations.json or MyActivity.json inside this ZIP.");
+  if (!matches.length) {
+    const names = zip.entries.map((e) => e.name).slice(0, 6).join(", ");
+    throw new Error(`No chats found inside this ZIP (it contains: ${names || "nothing"}). For Claude, use conversations-000.zip.`);
+  }
   return Promise.all(matches.map((e) => zip.readText(e)));
+}
+
+// Normal JSON, or "JSON Lines" (one JSON object per line).
+function parseJsonText(text) {
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length > 1) return lines.map((l) => JSON.parse(l));
+    throw e;
+  }
 }
 
 async function sendToBackground(items) {
@@ -185,7 +217,7 @@ async function handleFile(file) {
     let site = null;
     const items = [];
     for (const text of texts) {
-      const parsed = detectAndParse(JSON.parse(text));
+      const parsed = detectAndParse(parseJsonText(text));
       site ??= parsed.site;
       items.push(...parsed.items);
     }
@@ -205,6 +237,24 @@ async function handleFile(file) {
     );
   } catch (e) {
     li.replaceChildren(span("err", `✗ ${file.name}: `), e.message);
+    if (e instanceof ManifestError) {
+      const help = document.createElement("div");
+      help.className = "help";
+      help.append(
+        e.links.length
+          ? "Download your conversations file below (link expires 24 hours after the export was made), then drop that ZIP here:"
+          : "Open the email from Anthropic again and download the file named conversations-000.zip, then drop it here."
+      );
+      for (const f of e.links) {
+        const a = document.createElement("a");
+        a.href = f.export_url;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.textContent = `⬇ ${f.filename ?? "conversations.zip"}`;
+        help.append(document.createElement("br"), a);
+      }
+      li.append(help);
+    }
   }
   $("summary").textContent = grandTotal
     ? `${fmt(grandTotal)} past prompts added. Click the PromptPrint leaf icon and choose "All time" to see them.`

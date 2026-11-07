@@ -39,7 +39,8 @@
         <ol>
           <li>On claude.ai, click your name → <strong>Settings</strong></li>
           <li><strong>Privacy</strong> → <strong>Export data</strong></li>
-          <li>Open the email from Anthropic and download the file. If it ends in <strong>.dms</strong>, rename it to <strong>.zip</strong></li>
+          <li>Open the email from Anthropic. If you get a list of several files, download only <strong>conversations-000.zip</strong> (and -001, -002… if there are more)</li>
+          <li>If a file ends in <strong>.dms</strong>, rename it to <strong>.zip</strong></li>
         </ol>
       </article>
       <article class="card">
@@ -55,7 +56,7 @@
 
     <h2>Step 2: Add the files</h2>
     <label class="drop" id="drop">
-      <input type="file" id="file" accept=".zip,.json,.dms" multiple hidden>
+      <input type="file" id="file" accept=".zip,.json,.jsonl,.dms" multiple hidden>
       <span class="drop-icon">📂</span>
       <strong>Drop your .zip files here, or click to choose</strong>
       <span class="muted">You can add ChatGPT, Claude and Gemini files together. No need to unzip them.</span>

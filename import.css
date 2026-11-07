@@ -91,5 +91,7 @@ h3 { font-size: 15px; margin: 0 0 8px; display: flex; align-items: center; gap: 
 #result-list .ok { color: var(--accent); font-weight: 600; }
 #result-list .err { color: var(--danger); font-weight: 600; }
 #result-list .note { color: var(--warn); font-size: 13px; }
+#result-list .help { margin-top: 6px; font-size: 14px; }
+#result-list .help a { color: var(--accent); font-weight: 600; display: inline-block; margin-top: 6px; }
 .summary { margin: 10px 0 0; font-weight: 600; }
 .fine { font-size: 13px; margin-top: 18px; }
