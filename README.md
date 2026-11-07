@@ -6,6 +6,8 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 
 ## Features
 - **Usage tracking:** counts the prompts you send on chatgpt.com, claude.ai and gemini.google.com
+- **Import past history:** reads the chat exports from ChatGPT, Claude and Google Takeout (Gemini) to show your footprint from before you installed it
+- **Time periods:** last 7 days, last 30 days, or all time
 - **Carbon estimate:** grams of CO₂e per prompt, shown as a range and compared to phone charges and miles driven
 - **Task categories:** sorts each prompt into Math, Coding, Writing, Research, Brainstorm or Other
 - **Charts:** which AI you use, what you use it for, and daily emissions
@@ -18,7 +20,7 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 3. Turn on **Developer mode** (top right).
 4. Click **Load unpacked** and choose the project folder (the one containing `manifest.json`).
 5. Pin the extension: click the puzzle-piece icon, then the pin next to **PromptPrint**.
-6. Click the icon and choose **Load demo data** to see it in action.
+6. Click the icon, then **Import my real chat history** to see your past usage. For a presentation, **Load sample data** at the bottom fills it with a made-up week.
 
 After changing code, click the reload button on the extension's card in `chrome://extensions`, then refresh any open AI tabs.
 
@@ -29,6 +31,7 @@ After changing code, click the reload button on the extension's card in `chrome:
 | `content.js` | Runs on the AI sites. Spots each prompt you send and measures the reply length |
 | `background.js` | Categorizes prompts, estimates energy and carbon, saves events, creates demo data |
 | `popup.html` / `popup.css` / `popup.js` | The window that opens when you click the icon: totals, "That's about the same as…" dropdown, charts, suggestions |
+| `import.html` / `import.css` / `import.js` | The history importer: reads ChatGPT / Claude / Gemini export files in the browser (nothing is uploaded) |
 | `map.html` / `map.css` / `map.js` | The interactive world map (opened from the popup): pan, zoom, click a country for its charts |
 | `community-data.js` | **Sample** country data for the map, in the same format a real server would send |
 | `lib/constants.js` | Shared assumptions: energy per prompt, colors, everyday comparisons, number formatting |
@@ -46,7 +49,9 @@ Right now each person's data stays in their own browser, and the map uses **samp
 5. **Point the map at the server:** replace `getCommunityData()` in `community-data.js` with a `fetch()` to your API.
 
 ## Past history (before installing)
-The extension only sees prompts sent after it's installed. A possible future feature is **importing a data export**: ChatGPT (Settings → Data controls → Export data), Claude (Settings → Privacy → Export data) and Google Takeout (Gemini Apps activity) let users download their past chats. An importer could read those files in the browser and estimate past usage.
+Live tracking only sees prompts sent after installing. For older chats, use **Import my real chat history** in the popup. It reads the export ZIPs from ChatGPT (Settings → Data controls → Export data), Claude (Settings → Privacy → Export data) and Google Takeout (My Activity → Gemini Apps, JSON format). Only chats from before the install date are imported, and re-importing never double-counts.
+
+These export formats aren't officially documented, so the parsers in `import.js` were written to the commonly seen structure and tested with sample files, not with real exports. If an import finds 0 prompts, compare the real file to the parser and adjust it.
 
 ## Methodology
 No AI company publishes exact per-prompt figures for every model, so these are **transparent estimates**:

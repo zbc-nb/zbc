@@ -24,6 +24,14 @@ const fmt = (g) => PP.fmtNum(g);
 
 let weekTotals = { g: 0, wh: 0, count: 0 };
 
+// Time periods for the dropdown in the header.
+const PERIODS = {
+  "7": { days: 7, name: "this week", prev: "the week before" },
+  "30": { days: 30, name: "these 30 days", prev: "the 30 days before" },
+  all: { days: null, name: "in total", prev: null },
+};
+const currentPeriod = () => PERIODS[$("period").value] ?? PERIODS["7"];
+
 function groupBy(arr, key) {
   const out = {};
   for (const x of arr) (out[x[key]] ??= []).push(x);
@@ -59,7 +67,7 @@ function renderTotals(week, lastWeek) {
   change.className = "change";
   if (prev > 0 && week.length) {
     const pct = ((g - prev) / prev) * 100;
-    change.textContent = `${pct <= 0 ? "▼" : "▲"} ${Math.abs(pct).toFixed(0)}% vs. the week before`;
+    change.textContent = `${pct <= 0 ? "▼" : "▲"} ${Math.abs(pct).toFixed(0)}% vs. ${currentPeriod().prev}`;
     change.classList.add(pct <= 0 ? "good" : "bad");
   } else {
     change.textContent = "";
@@ -149,24 +157,60 @@ function renderCategories(week) {
   }
 }
 
-function renderDaily(week) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const start = today.getTime() - i * DAY;
-    const g = sum(week.filter((e) => e.timestamp >= start && e.timestamp < start + DAY), (e) => e.gco2e);
-    days.push({ start, g });
+// Column chart: one bar per day (7 or 30 days) or per month (all time).
+function renderTimeline(events) {
+  const period = currentPeriod();
+  const buckets = [];
+  if (period.days) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = period.days - 1; i >= 0; i--) {
+      const start = new Date(today);
+      start.setDate(today.getDate() - i);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 1);
+      const label = start.toLocaleDateString(undefined, period.days <= 7 ? { weekday: "short" } : { month: "short", day: "numeric" });
+      buckets.push({ start: +start, end: +end, label, tip: start.toLocaleDateString() });
+    }
+    $("timeline-title").textContent = "Daily emissions";
+  } else {
+    const first = new Date(Math.min(...events.map((e) => e.timestamp), Date.now()));
+    let m = new Date(first.getFullYear(), first.getMonth(), 1);
+    const now = new Date();
+    const months = [];
+    while (m <= now) {
+      months.push(m);
+      m = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+    }
+    for (const start of months.slice(-24)) {
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+      buckets.push({
+        start: +start,
+        end: +end,
+        label: start.toLocaleDateString(undefined, { month: "short" }),
+        tip: start.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+      });
+    }
+    $("timeline-title").textContent = "Monthly emissions";
   }
-  const max = Math.max(...days.map((d) => d.g), 0.0001);
-  const box = $("daily-bars");
-  box.replaceChildren(
-    ...days.map((d) =>
-      el("div", { className: "day", title: `${fmt(d.g)} g CO₂e` },
-        el("div", { className: "col", style: { height: `${(d.g / max) * 75}px` } }),
-        el("div", { className: "lbl" }, new Date(d.start).toLocaleDateString(undefined, { weekday: "short" }))
+  for (const b of buckets) b.g = sum(events.filter((e) => e.timestamp >= b.start && e.timestamp < b.end), (e) => e.gco2e);
+
+  const max = Math.max(...buckets.map((b) => b.g), 0.0001);
+  // Many thin bars: label only the first and last under the chart.
+  const dense = buckets.length > 12;
+  $("daily-bars").classList.toggle("dense", dense);
+  $("daily-bars").replaceChildren(
+    ...buckets.map((b) =>
+      el("div", { className: "day", title: `${b.tip}: ${PP.fmtGrams(b.g)} CO₂e` },
+        el("div", { className: "col", style: { height: `${(b.g / max) * 75}px` } }),
+        ...(dense ? [] : [el("div", { className: "lbl" }, b.label)])
       )
     )
+  );
+  $("timeline-axis").hidden = !dense;
+  $("timeline-axis").replaceChildren(
+    el("span", {}, buckets[0].label),
+    el("span", {}, buckets[buckets.length - 1].label)
   );
 }
 
@@ -189,7 +233,7 @@ function buildSuggestions(week) {
     tips.push({
       title: `${Math.round(share * 100)}% of your prompts are ${category.toLowerCase()} (${siteShare}% of those on ${siteName}).`,
       alts: `Try: ${alts.join(", ")}.`,
-      save: `Doing half of these another way saves ≈ ${fmt(halfSaved)} g CO₂e a week.`,
+      save: `Doing half of these another way would have saved ≈ ${PP.fmtGrams(halfSaved)} CO₂e ${currentPeriod().name}.`,
     });
   }
 
@@ -223,17 +267,33 @@ function renderSuggestions(week) {
 async function render() {
   const { events = [] } = await chrome.storage.local.get("events");
   const now = Date.now();
-  const week = events.filter((e) => e.timestamp > now - 7 * DAY);
-  const lastWeek = events.filter((e) => e.timestamp <= now - 7 * DAY && e.timestamp > now - 14 * DAY);
+  const { days } = currentPeriod();
+  const current = days ? events.filter((e) => e.timestamp > now - days * DAY) : events;
+  const previous = days
+    ? events.filter((e) => e.timestamp <= now - days * DAY && e.timestamp > now - 2 * days * DAY)
+    : [];
 
-  $("empty").hidden = week.length > 0;
-  $("charts").hidden = week.length === 0;
+  $("empty").hidden = current.length > 0;
+  $("charts").hidden = current.length === 0;
+  $("empty-older").hidden = !(events.length && !current.length);
 
-  renderTotals(week, lastWeek);
-  renderPie(week);
-  renderCategories(week);
-  renderDaily(week);
-  renderSuggestions(week);
+  renderTotals(current, previous);
+  renderPie(current);
+  renderCategories(current);
+  renderTimeline(current);
+  renderSuggestions(current);
+}
+
+// Restore the last period picked. With no choice saved yet, show "All time"
+// when there's no recent usage (e.g. right after importing old chats).
+async function setupPeriodSelect() {
+  const { period, events = [] } = await chrome.storage.local.get(["period", "events"]);
+  if (period && PERIODS[period]) $("period").value = period;
+  else if (events.length && !events.some((e) => e.timestamp > Date.now() - 7 * DAY)) $("period").value = "all";
+  $("period").addEventListener("change", () => {
+    chrome.storage.local.set({ period: $("period").value });
+    render();
+  });
 }
 
 // ---------- Buttons ----------
@@ -242,7 +302,13 @@ $("map-btn").addEventListener("click", () => {
   chrome.tabs.create({ url: chrome.runtime.getURL("map.html") });
 });
 
+$("import-btn").addEventListener("click", () => {
+  // Opens in a full tab: a file picker would close this small popup.
+  chrome.tabs.create({ url: chrome.runtime.getURL("import.html") });
+});
+
 $("demo-btn").addEventListener("click", async () => {
+  if (!confirm("Add a week of made-up sample usage for presentations? It mixes with your real data until you clear it.")) return;
   await chrome.runtime.sendMessage({ type: "load-demo" });
   render();
 });
@@ -270,4 +336,4 @@ chrome.storage.onChanged.addListener((changes) => {
 });
 
 setupEquivalentSelect();
-render();
+setupPeriodSelect().then(render);

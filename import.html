@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Import Chat History</title>
+  <link rel="icon" href="assets/icon32.png">
+  <link rel="stylesheet" href="import.css">
+</head>
+<body>
+  <main>
+    <header class="brand">
+      <img src="assets/icon32.png" alt="" width="32" height="32">
+      <div>
+        <h1>Import your real AI history</h1>
+        <p class="muted">See the footprint of chats you had before installing PromptPrint.</p>
+      </div>
+    </header>
+
+    <section class="card privacy">
+      🔒 <strong>Your files never leave this computer.</strong> PromptPrint reads them right here in your browser,
+      keeps only the date, AI, task category and length of each prompt, and throws the text away.
+    </section>
+
+    <h2>Step 1: Download your history</h2>
+    <p class="muted">Each AI emails you a download link, usually within a few minutes (sometimes longer). Menu names may differ slightly.</p>
+
+    <div class="steps">
+      <article class="card">
+        <h3><span class="dot" style="background:#10a37f"></span>ChatGPT</h3>
+        <ol>
+          <li>On chatgpt.com, click your profile picture → <strong>Settings</strong></li>
+          <li><strong>Data controls</strong> → <strong>Export data</strong> → <strong>Confirm export</strong></li>
+          <li>Open the email from OpenAI and download the <strong>.zip</strong> file</li>
+        </ol>
+      </article>
+      <article class="card">
+        <h3><span class="dot" style="background:#d97757"></span>Claude</h3>
+        <ol>
+          <li>On claude.ai, click your name → <strong>Settings</strong></li>
+          <li><strong>Privacy</strong> → <strong>Export data</strong></li>
+          <li>Open the email from Anthropic and download the file. If it ends in <strong>.dms</strong>, rename it to <strong>.zip</strong></li>
+        </ol>
+      </article>
+      <article class="card">
+        <h3><span class="dot" style="background:#4285f4"></span>Gemini <span class="tag">experimental</span></h3>
+        <ol>
+          <li>Go to <strong>takeout.google.com</strong> and click <strong>Deselect all</strong></li>
+          <li>Tick <strong>My Activity</strong>. Under "All activity data included", choose only <strong>Gemini Apps</strong></li>
+          <li>Under "Multiple formats", set Activity records to <strong>JSON</strong></li>
+          <li>Create the export and download the <strong>.zip</strong></li>
+        </ol>
+      </article>
+    </div>
+
+    <h2>Step 2: Add the files</h2>
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".zip,.json,.dms" multiple hidden>
+      <span class="drop-icon">📂</span>
+      <strong>Drop your .zip files here, or click to choose</strong>
+      <span class="muted">You can add ChatGPT, Claude and Gemini files together. No need to unzip them.</span>
+    </label>
+
+    <section id="results" class="card" hidden>
+      <h2>Results</h2>
+      <ul id="result-list"></ul>
+      <p id="summary" class="summary"></p>
+    </section>
+
+    <p class="muted fine">Only chats from before you installed PromptPrint are imported (newer ones are already tracked), and importing the same file twice won't double-count anything.</p>
+  </main>
+
+  <script src="import.js"></script>
+</body>
+</html>

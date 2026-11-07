@@ -68,9 +68,10 @@ function saveEvents(newEvents) {
   return writeQueue;
 }
 
-function buildEvent({ site, promptText = "", responseChars = 0, timestamp, demo = false }) {
+function buildEvent({ site, promptText = "", responseChars = 0, timestamp, demo = false, importKey }) {
   return {
     id: crypto.randomUUID(),
+    ...(importKey ? { importKey, imported: true } : {}),
     site,
     category: categorize(promptText),
     ...estimateEmissions(site, promptText.length, responseChars),
@@ -120,7 +121,34 @@ function generateDemoEvents() {
   return events;
 }
 
-// ---------- Messages from content.js and popup.js ----------
+// ---------- Importing past chat history (from import.js) ----------
+// Saves only messages from BEFORE the extension started tracking, so nothing
+// is counted twice, and skips messages that were already imported.
+async function importEvents(items) {
+  await writeQueue;
+  const { events = [], installedAt = Date.now() } = await chrome.storage.local.get(["events", "installedAt"]);
+  const seen = new Set(events.map((e) => e.importKey).filter(Boolean));
+  const fresh = [];
+  let duplicates = 0;
+  let afterInstall = 0;
+  for (const item of items) {
+    if (!SITES[item.site] || !item.importKey) continue;
+    if (seen.has(item.importKey)) { duplicates++; continue; }
+    if (item.timestamp >= installedAt) { afterInstall++; continue; }
+    seen.add(item.importKey);
+    fresh.push(buildEvent(item));
+  }
+  await saveEvents(fresh);
+  return { ok: true, added: fresh.length, duplicates, afterInstall };
+}
+
+// Remember when tracking started (used by the importer above).
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+  const { installedAt } = await chrome.storage.local.get("installedAt");
+  if (reason === "install" || !installedAt) await chrome.storage.local.set({ installedAt: Date.now() });
+});
+
+// ---------- Messages from content.js, popup.js and import.js ----------
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
     switch (msg.type) {
@@ -129,6 +157,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         if (!SITES[msg.site]) throw new Error("unknown site " + msg.site);
         await saveEvents([buildEvent(msg)]);
         return { ok: true };
+      case "import-events":
+        return importEvents(msg.items ?? []);
       case "load-demo":
         await saveEvents(generateDemoEvents());
         return { ok: true };

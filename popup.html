@@ -9,7 +9,11 @@
   <header>
     <img src="assets/icon32.png" alt="" width="24" height="24">
     <h1>PromptPrint</h1>
-    <span class="period">Last 7 days</span>
+    <select id="period" class="period" aria-label="Time period">
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+      <option value="all">All time</option>
+    </select>
   </header>
 
   <section class="card total">
@@ -36,8 +40,9 @@
   <button id="map-btn" class="map-btn">🌍 Open the world map</button>
 
   <section id="empty" class="card empty" hidden>
-    <p>No AI usage tracked yet.</p>
-    <p class="muted">Chat on ChatGPT, Claude or Gemini, or load demo data below.</p>
+    <p>No AI usage in this period yet.</p>
+    <p class="muted">Chat on ChatGPT, Claude or Gemini and it appears here, or import your past chats below.</p>
+    <p class="muted" id="empty-older" hidden>You have older usage: pick <strong>All time</strong> at the top.</p>
   </section>
 
   <section id="charts">
@@ -55,8 +60,9 @@
     </div>
 
     <div class="card">
-      <h2>Daily emissions</h2>
+      <h2 id="timeline-title">Daily emissions</h2>
       <div id="daily-bars" class="daily"></div>
+      <div id="timeline-axis" class="axis" hidden></div>
     </div>
   </section>
 
@@ -79,9 +85,10 @@
   </details>
 
   <footer>
-    <button id="demo-btn" class="secondary">Load demo data</button>
+    <button id="import-btn">Import my real chat history</button>
     <button id="clear-btn" class="secondary danger">Clear data</button>
   </footer>
+  <button id="demo-btn" class="link">Load sample data (for presentations)</button>
   <p class="fine">Estimates only — see README for methodology. Your data never leaves this browser.</p>
 
   <script src="lib/constants.js"></script>

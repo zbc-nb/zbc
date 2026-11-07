@@ -44,7 +44,7 @@ header {
   margin-bottom: 10px;
 }
 h1 { font-size: 16px; margin: 0; }
-.period { margin-left: auto; color: var(--muted); font-size: 12px; }
+.period { margin-left: auto; font-size: 12px; padding: 4px 6px; }
 h2 { font-size: 13px; margin: 0 0 8px; }
 
 .card {
@@ -119,6 +119,9 @@ h2 { font-size: 13px; margin: 0 0 8px; }
   min-height: 2px;
 }
 .day .lbl { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.daily.dense { gap: 2px; }
+.axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 3px; }
+.daily.dense .col { border-radius: 2px 2px 0 0; }
 
 /* Suggestions */
 .suggestions { list-style: none; margin: 0; padding: 0; }
@@ -157,4 +160,16 @@ button.secondary {
 button.danger { color: var(--danger); }
 footer { display: flex; gap: 8px; }
 footer button { flex: 1; }
+footer #import-btn { flex: 1.6; }
+button.link {
+  display: block;
+  margin: 8px auto 0;
+  background: none;
+  border: 0;
+  padding: 2px;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 12px;
+  text-decoration: underline;
+}
 .fine { color: var(--muted); font-size: 11px; text-align: center; margin: 8px 0 0; }
