@@ -31,14 +31,38 @@
   };
   const sel = SELECTORS[SITE];
 
-  const GRACE_MS = 3000; // ignore messages that load with an old conversation
+  const SEND_WINDOW_MS = 15000; // a sent message must appear within 15 s of pressing send
   const STABLE_MS = 2500; // reply counts as finished after this long unchanged
   const TIMEOUT_MS = 120000; // give up waiting for a reply after 2 minutes
 
   const seen = new WeakSet();
-  let ignoreUntil = Date.now() + GRACE_MS;
-  let lastUrl = location.href;
   let pending = null; // the prompt we're waiting on a reply for
+
+  // Only messages YOU send count. Messages that appear because you opened an
+  // old conversation aren't preceded by a send, so they're ignored. (Watching
+  // for a send works even when a new chat changes the page address.)
+  let sendsWaiting = 0;
+  let lastSendAt = 0;
+  function noteSend() {
+    sendsWaiting = Math.min(sendsWaiting + 1, 3);
+    lastSendAt = Date.now();
+  }
+
+  const isTextBox = (t) =>
+    t instanceof Element && (t.matches("textarea, input[type=text]") || t.isContentEditable);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing && isTextBox(e.target)) noteSend();
+  }, true);
+
+  document.addEventListener("click", (e) => {
+    const btn = e.target instanceof Element && e.target.closest("button, [role=button]");
+    if (!btn) return;
+    const label = `${btn.getAttribute("aria-label") ?? ""} ${btn.getAttribute("data-testid") ?? ""} ${btn.className}`;
+    if (/send|submit/i.test(label)) noteSend();
+  }, true);
+
+  document.addEventListener("submit", noteSend, true);
 
   const textOf = (el) => (el?.innerText || el?.textContent || "").trim();
 
@@ -107,22 +131,22 @@
   });
 
   function scanForNewPrompts() {
-    // Switching conversations in these single-page apps loads old messages;
-    // don't count those.
-    if (location.href !== lastUrl) {
-      lastUrl = location.href;
-      ignoreUntil = Date.now() + GRACE_MS;
-    }
+    if (sendsWaiting && Date.now() - lastSendAt > SEND_WINDOW_MS) sendsWaiting = 0;
 
     for (const el of document.querySelectorAll(sel.user)) {
       if (seen.has(el)) continue;
-      if (Date.now() < ignoreUntil) {
-        seen.add(el);
-        continue;
-      }
       const text = textOf(el);
       if (!text) continue; // not rendered yet; check again next scan
       seen.add(el);
+
+      // Same prompt re-drawn by the site (e.g. when a new chat gets its
+      // address): follow the new copy instead of counting it again.
+      if (pending && !pending.userEl.isConnected && text === pending.promptText) {
+        pending.userEl = el;
+        continue;
+      }
+      if (!sendsWaiting) continue; // loaded with an old conversation
+      sendsWaiting--;
 
       finishPending(); // previous prompt is done if a new one was sent
       pending = {
@@ -137,6 +161,14 @@
 
   function checkReply() {
     if (!pending) return;
+    if (!pending.userEl.isConnected) {
+      // The site re-drew the chat; find our prompt again by its text.
+      const again = [...document.querySelectorAll(sel.user)].reverse().find((u) => textOf(u) === pending.promptText);
+      if (again) {
+        seen.add(again);
+        pending.userEl = again;
+      }
+    }
     const replies = document.querySelectorAll(sel.assistant);
     const lastReply = replies[replies.length - 1];
     const now = Date.now();
