@@ -1,112 +1,171 @@
-:root {
-  --bg: #f4f7f5;
-  --card: #ffffff;
-  --text: #1c2b22;
-  --muted: #5f6f66;
-  --accent: #16804f;
-  --accent-soft: #e3f3ea;
-  --border: #dde5e0;
-  --danger: #b42318;
-  --warn: #b54708;
-}
+/* import.css: the history import page. Colors and fonts come from lib/ui.css. */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121815;
-    --card: #1b2420;
-    --text: #e6eee9;
-    --muted: #9aaba1;
-    --accent: #4cc38a;
-    --accent-soft: #1f3a2d;
-    --border: #2b3732;
-    --danger: #f97066;
-    --warn: #fdb022;
-  }
-}
-
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  padding: 24px 16px 40px;
-  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
-
-main { max-width: 900px; margin: 0 auto; }
-h1 { font-size: 22px; margin: 0; }
-h2 { font-size: 17px; margin: 26px 0 6px; }
-h3 { font-size: 15px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+main { max-width: 900px; margin: 0 auto; padding: 0 16px 48px; }
+.topbar { height: 60px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.stored { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sage); }
 .muted { color: var(--muted); }
-.brand { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.brand p { margin: 2px 0 0; }
 
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
+/* ---------- Hero with the line-drawn leaf ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  margin: 24px 0 16px;
+  padding: 30px 28px;
+  border-radius: 20px;
+  background: var(--primary);
+  color: var(--on-primary);
+  min-height: 190px;
+}
+.hero-text { position: relative; z-index: 1; max-width: 560px; }
+.hero .eyebrow { color: #cfe0c3; }
+.hero h1 { font-family: var(--display); font-size: clamp(26px, 4vw, 36px); letter-spacing: -1.4px; line-height: 1.1; margin: 8px 0 10px; color: #ffffff; }
+.hero p { margin: 0; color: #dbe8cf; font-size: 15px; }
+.hero .leaf-art {
+  position: absolute;
+  right: 18px;
+  bottom: -18px;
+  width: 190px;
+  color: rgba(239, 246, 223, 0.28);
+  stroke-width: 1.1;
+  pointer-events: none;
+}
+/* A few small leaves drifting across the hero */
+.drift svg {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  fill: rgba(239, 246, 223, 0.22);
+  top: -20px;
+  animation: drift 11s linear infinite;
+}
+.drift svg:nth-child(1) { left: 58%; animation-delay: 0s; }
+.drift svg:nth-child(2) { left: 72%; animation-delay: -3s; width: 12px; height: 12px; }
+.drift svg:nth-child(3) { left: 86%; animation-delay: -6s; }
+.drift svg:nth-child(4) { left: 64%; animation-delay: -8.5s; width: 10px; height: 10px; }
+@keyframes drift {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate(-60px, 240px) rotate(220deg); opacity: 0; }
+}
+
+/* ---------- Progress stepper ---------- */
+.stepper { list-style: none; display: flex; gap: 8px; padding: 0; margin: 0 0 16px; }
+.stepper li {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
   border-radius: 12px;
-  padding: 14px 16px;
-}
-.privacy { background: var(--accent-soft); border-color: transparent; }
-
-.steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
-}
-.steps ol { margin: 0; padding-left: 20px; font-size: 14px; }
-.steps li { margin-bottom: 5px; }
-.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.tag {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
+  background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 1px 7px;
+  font-size: 13px;
+  color: var(--muted);
 }
+.num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--panel-soft);
+  color: var(--heading);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 12px;
+}
+.stepper li.current { border-color: var(--sage); color: var(--heading); font-weight: 600; }
+.stepper li.current .num { background: var(--sage); color: #12301f; }
+.stepper li.done { color: var(--heading); }
+.stepper li.done .num { background: var(--primary); color: var(--on-primary); }
+.stepper li.done .num { font-size: 0; }
+.stepper li.done .num::after { content: "✓"; font-size: 13px; }
 
+.privacy {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--panel-soft);
+  color: var(--heading);
+  margin-bottom: 8px;
+}
+.privacy svg { flex-shrink: 0; margin-top: 2px; color: var(--sage-text); }
+.privacy p { margin: 0; font-size: 14px; color: var(--text); }
+
+.section-title { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 20px; letter-spacing: -0.5px; color: var(--heading); margin: 28px 0 4px; }
+.lead { margin: 0 0 12px; font-size: 14px; }
+
+/* ---------- AI cards ---------- */
+.ai-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.ai-card { transition: transform 0.15s, border-color 0.15s; }
+.ai-card:hover { transform: translateY(-2px); border-color: var(--sage); }
+.ai-card header { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.ai-card h3 { font-family: var(--display); font-size: 16px; margin: 0 0 2px; color: var(--heading); }
+.ai-card ol { margin: 0; padding-left: 20px; font-size: 13.5px; }
+.ai-card li { margin-bottom: 6px; }
+
+/* ---------- Drop zone with a sprout ---------- */
 .drop {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   text-align: center;
-  padding: 34px 16px;
-  border: 2px dashed var(--border);
-  border-radius: 12px;
-  background: var(--card);
+  padding: 26px 16px 30px;
+  border: 2px dashed var(--sage);
+  border-radius: 18px;
+  background: var(--panel);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
-.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
-.drop-icon { font-size: 30px; }
+.drop:hover, .drop.over { background: var(--panel-soft); border-color: var(--primary); }
+.drop:focus-within { outline: 3px solid var(--sage); outline-offset: 2px; }
+.drop strong { font-family: var(--display); font-size: 17px; color: var(--heading); margin-top: 4px; }
+.drop-art { width: 120px; height: 110px; }
+.drop-art .shadow { fill: var(--track); }
+.drop-art .pot, .grow .pot { fill: var(--pot); }
+.drop-art .rim, .grow .rim { fill: var(--pot-rim); }
+.drop-art .stem, .grow .stem { stroke: var(--stem); stroke-width: 4; stroke-linecap: round; fill: none; }
+.drop-art .leaf, .grow .leaf { fill: var(--leaf); }
+.drop-art .arrow { stroke: var(--sage-text); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none; animation: bob 1.8s ease-in-out infinite; }
+.drop-art .sprout { transform-origin: 60px 62px; transition: transform 0.3s ease; }
+.drop:hover .sprout, .drop.over .sprout { transform: scale(1.15) rotate(-3deg); }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 
-#results { margin-top: 16px; }
-#results h2 { margin-top: 0; }
+/* ---------- Results with a plant that grows ---------- */
+.results { margin-top: 18px; }
+.results-head { display: flex; gap: 14px; align-items: center; margin-bottom: 8px; }
+.results-head h2 { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 18px; margin: 0 0 2px; }
+.total { margin: 0; color: var(--muted); }
+.total strong { font-family: var(--display); font-size: 26px; color: var(--heading); letter-spacing: -0.5px; margin-right: 4px; }
+.grow { width: 72px; height: 72px; flex-shrink: 0; }
+.grow .leaf { transform-box: fill-box; transform-origin: bottom center; transform: scale(0); transition: transform 0.5s cubic-bezier(.3,1.5,.6,1); }
+.grow.g1 .l1, .grow.g2 .l1, .grow.g2 .l2, .grow.g3 .leaf { transform: scale(1); }
+.grow .stem { transition: opacity 0.3s; opacity: 0.4; }
+.grow.g1 .stem, .grow.g2 .stem, .grow.g3 .stem { opacity: 1; }
 #result-list { list-style: none; padding: 0; margin: 0; }
-#result-list li { padding: 8px 0; border-top: 1px solid var(--border); }
-#result-list li:first-child { border-top: 0; }
-#result-list .ok { color: var(--accent); font-weight: 600; }
-#result-list .err { color: var(--danger); font-weight: 600; }
+#result-list li { padding: 10px 0; border-top: 1px solid var(--border); font-size: 14px; }
+#result-list .ok { color: var(--good); font-weight: 700; }
+#result-list .err { color: var(--danger); font-weight: 700; }
 #result-list .note { color: var(--warn); font-size: 13px; }
 #result-list .help { margin-top: 6px; font-size: 14px; }
-#result-list .help a { color: var(--accent); font-weight: 600; display: inline-block; margin-top: 6px; }
-.summary { margin: 10px 0 0; font-weight: 600; }
+#result-list .help a { color: var(--sage-text); font-weight: 600; display: inline-block; margin-top: 6px; }
+.summary { margin: 10px 0 0; font-weight: 600; color: var(--heading); }
+.summary:empty { display: none; }
 .fine { font-size: 13px; margin-top: 18px; }
 
-
-/* ---------- Footprint look (matches the popup) ---------- */
-:root {
-  --bg: #f7f9f5; --card: #ffffff; --text: #293c33; --muted: #5f6b5b;
-  --accent: #264e36; --accent-soft: #eef3e8; --border: #e1e7dc;
+@media (max-width: 560px) {
+  .stepper { flex-direction: column; }
+  .hero { padding: 24px 20px; }
+  .hero .leaf-art { width: 130px; }
 }
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #111713; --card: #19211c; --text: #e3eae1; --muted: #a9b5a6; --accent: #a3c97c; --accent-soft: #1d2a20; --border: #2a352d; }
+@media (prefers-reduced-motion: reduce) {
+  .drift { display: none; }
+  .drop-art .arrow { animation: none; }
+  .ai-card, .drop-art .sprout, .grow .leaf { transition: none; }
 }
-body { font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
-h1, h2, h3 { font-family: Manrope, "DM Sans", sans-serif; letter-spacing: -0.4px; }
-h1 { font-weight: 800; }
-.card, .map-card, .panel, .steps .card { border: 1px solid var(--border); border-radius: 14px; box-shadow: none; }
-button, select { border-radius: 10px; }

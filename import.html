@@ -7,66 +7,108 @@
   <link rel="icon" href="assets/icon32.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap">
+  <link rel="stylesheet" href="lib/ui.css">
   <link rel="stylesheet" href="import.css">
 </head>
 <body>
   <main>
-    <header class="brand">
-      <img src="assets/icon32.png" alt="" width="32" height="32">
-      <div>
-        <h1>Import your real AI history</h1>
-        <p class="muted">See the footprint of chats you had before installing PromptPrint.</p>
-      </div>
+    <header class="topbar">
+      <span class="brand">promptprint<span class="brand-dot">.</span></span>
+      <span class="stored"><span class="status-dot" aria-hidden="true"></span>Stays on this computer</span>
     </header>
 
-    <section class="card privacy">
-      🔒 <strong>Your files never leave this computer.</strong> PromptPrint reads them right here in your browser,
-      keeps only the date, AI, task category and length of each prompt, and throws the text away.
+    <!-- Hero: the same line-drawn leaf as the popup's Estimated emissions card -->
+    <section class="hero">
+      <div class="hero-text">
+        <div class="eyebrow">Import history</div>
+        <h1>Bring your past AI chats into view<span class="brand-dot">.</span></h1>
+        <p>See the footprint of everything you asked before installing PromptPrint, including chats from the phone and desktop apps.</p>
+      </div>
+      <svg class="leaf-art" viewBox="0 0 120 130" fill="none" aria-hidden="true"><path d="M25 119C30 78 74 68 105 15C114 87 74 121 25 119Z" stroke="currentColor"/><path d="M19 130C48 95 71 65 105 15M45 100L39 70M62 79L89 77M79 54L76 35" stroke="currentColor"/></svg>
+      <div class="drift" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 20C5 12 13 9 20 4c1 9-5 15-16 16Z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M4 20C5 12 13 9 20 4c1 9-5 15-16 16Z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M4 20C5 12 13 9 20 4c1 9-5 15-16 16Z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M4 20C5 12 13 9 20 4c1 9-5 15-16 16Z"/></svg>
+      </div>
     </section>
 
-    <h2>Step 1: Download your history</h2>
-    <p class="muted">Each AI emails you a download link, usually within a few minutes (sometimes longer). Menu names may differ slightly.
-      <strong>These exports include chats from the phone and desktop apps too</strong>, which the extension can't see live.</p>
+    <ol class="stepper" id="stepper" aria-label="Progress">
+      <li data-step="1" class="current"><span class="num">1</span><span>Download your history</span></li>
+      <li data-step="2"><span class="num">2</span><span>Add the files</span></li>
+      <li data-step="3"><span class="num">3</span><span>See your footprint</span></li>
+    </ol>
 
-    <div class="steps">
-      <article class="card">
-        <h3><span class="dot" style="background:#10a37f"></span>ChatGPT</h3>
+    <section class="privacy">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <p><strong>Your files never leave this computer.</strong> PromptPrint reads them here in your browser, keeps only the date, AI, task category and length of each prompt, and throws the text away.</p>
+    </section>
+
+    <h2 class="section-title"><span class="num">1</span> Download your history</h2>
+    <p class="muted lead">Each AI emails you a download link. Menu names may differ slightly.</p>
+
+    <div class="ai-cards">
+      <article class="panel ai-card">
+        <header><span data-icon="chatgpt"></span><div><h3>ChatGPT</h3><span class="chip">Email in minutes</span></div></header>
         <ol>
           <li>On chatgpt.com, click your profile picture → <strong>Settings</strong></li>
           <li><strong>Data controls</strong> → <strong>Export data</strong> → <strong>Confirm export</strong></li>
-          <li>Open the email from OpenAI and download the <strong>.zip</strong> file</li>
+          <li>Open the email from OpenAI and download the <strong>.zip</strong></li>
         </ol>
       </article>
-      <article class="card">
-        <h3><span class="dot" style="background:#d97757"></span>Claude</h3>
+      <article class="panel ai-card">
+        <header><span data-icon="claude"></span><div><h3>Claude</h3><span class="chip">Email in minutes</span></div></header>
         <ol>
           <li>On claude.ai, click your name → <strong>Settings</strong></li>
           <li><strong>Privacy</strong> → <strong>Export data</strong></li>
-          <li>Open the email from Anthropic. If you get a list of several files, download only <strong>conversations-000.zip</strong> (and -001, -002… if there are more)</li>
+          <li>From the email, download <strong>conversations-000.zip</strong> (and -001, -002… if there are more)</li>
           <li>If a file ends in <strong>.dms</strong>, rename it to <strong>.zip</strong></li>
         </ol>
       </article>
-      <article class="card">
-        <h3><span class="dot" style="background:#4285f4"></span>Gemini</h3>
+      <article class="panel ai-card">
+        <header><span data-icon="gemini"></span><div><h3>Gemini</h3><span class="chip">Can take hours</span></div></header>
         <ol>
-          <li>Go to <strong>takeout.google.com</strong> and click <strong>Deselect all</strong></li>
-          <li>Tick <strong>My Activity</strong>. Under "All activity data included", choose only <strong>Gemini Apps</strong></li>
+          <li>Go to <strong>takeout.google.com</strong> → <strong>Deselect all</strong></li>
+          <li>Tick <strong>My Activity</strong>; under "All activity data included" choose only <strong>Gemini Apps</strong></li>
           <li>Under "Multiple formats", set Activity records to <strong>JSON</strong></li>
           <li>Create the export and download the <strong>.zip</strong></li>
         </ol>
       </article>
     </div>
 
-    <h2>Step 2: Add the files</h2>
+    <h2 class="section-title"><span class="num">2</span> Add the files</h2>
     <label class="drop" id="drop">
       <input type="file" id="file" accept=".zip,.json,.jsonl,.dms" multiple hidden>
-      <span class="drop-icon">📂</span>
+      <svg class="drop-art" viewBox="0 0 120 110" aria-hidden="true">
+        <ellipse cx="60" cy="104" rx="34" ry="4" class="shadow"/>
+        <path d="M38 70 h44 l-6 30 h-32 z" class="pot"/>
+        <rect x="34" y="62" width="52" height="10" rx="3" class="rim"/>
+        <g class="sprout">
+          <path d="M60 62 V36" class="stem"/>
+          <path d="M60 46 C 48 46, 40 38, 38 28 C 50 28, 58 34, 60 46 Z" class="leaf"/>
+          <path d="M60 40 C 72 40, 80 32, 82 22 C 70 22, 62 28, 60 40 Z" class="leaf"/>
+        </g>
+        <path d="M60 12 v-8 M54 8 l6-5 6 5" class="arrow"/>
+      </svg>
       <strong>Drop your .zip files here, or click to choose</strong>
-      <span class="muted">You can add ChatGPT, Claude and Gemini files together. No need to unzip them.</span>
+      <span class="muted">ChatGPT, Claude and Gemini files can go in together. No need to unzip.</span>
     </label>
 
-    <section id="results" class="card" hidden>
-      <h2>Results</h2>
+    <section id="results" class="panel results" hidden aria-labelledby="results-title">
+      <div class="results-head">
+        <svg class="grow" id="grow" viewBox="0 0 80 80" aria-hidden="true">
+          <path d="M26 54 h28 l-4 20 h-20 z" class="pot"/>
+          <rect x="23" y="49" width="34" height="7" rx="2" class="rim"/>
+          <path d="M40 49 V24" class="stem"/>
+          <path d="M40 38 C 31 38, 25 32, 24 24 C 33 24, 39 29, 40 38 Z" class="leaf l1"/>
+          <path d="M40 32 C 49 32, 55 26, 56 18 C 47 18, 41 23, 40 32 Z" class="leaf l2"/>
+          <path d="M40 26 C 36 20, 36 13, 39 8 C 44 13, 44 20, 40 26 Z" class="leaf l3"/>
+        </svg>
+        <div>
+          <h2 id="results-title"><span class="num">3</span> Your imported history</h2>
+          <p class="total"><strong id="total-added">0</strong> past prompts added</p>
+        </div>
+      </div>
       <ul id="result-list"></ul>
       <p id="summary" class="summary"></p>
     </section>
@@ -74,6 +116,8 @@
     <p class="muted fine">Only chats from before you installed PromptPrint are imported (newer ones are already tracked), and importing the same file twice won't double-count anything.</p>
   </main>
 
+  <script src="lib/constants.js"></script>
+  <script src="lib/icons.js"></script>
   <script src="import.js"></script>
 </body>
 </html>

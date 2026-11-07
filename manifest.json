@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PromptPrint – AI Carbon Tracker",
   "short_name": "PromptPrint",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Tracks your AI chatbot usage on the platforms you choose, estimates its electricity, carbon and cooling water, and suggests lower-impact alternatives.",
   "permissions": [
     "storage",

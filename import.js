@@ -195,6 +195,41 @@ async function sendToBackground(items) {
 const fmt = (n) => n.toLocaleString();
 let grandTotal = 0;
 
+// ---------- Page decoration: AI icons, progress steps, growing plant ----------
+for (const slot of document.querySelectorAll("[data-icon]")) slot.replaceWith(PP.siteIcon(slot.dataset.icon, 40));
+
+function setStep(n) {
+  for (const li of document.querySelectorAll("#stepper li")) {
+    const step = Number(li.dataset.step);
+    li.classList.toggle("done", step < n || (n === 3 && step === 3));
+    li.classList.toggle("current", step === n && n !== 3);
+    if (step === n) li.setAttribute("aria-current", "step");
+    else li.removeAttribute("aria-current");
+  }
+}
+
+// The plant grows a leaf at a time as more prompts come in.
+function growPlant() {
+  const stage = grandTotal >= 500 ? 3 : grandTotal >= 50 ? 2 : grandTotal > 0 ? 1 : 0;
+  $("grow").setAttribute("class", `grow${stage ? " g" + stage : ""}`);
+}
+
+// Counts the total up smoothly instead of jumping.
+function showTotal(from, to) {
+  const out = $("total-added");
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || to - from < 2) {
+    out.textContent = fmt(to);
+    return;
+  }
+  const start = performance.now();
+  const tick = (t) => {
+    const k = Math.min(1, (t - start) / 700);
+    out.textContent = fmt(Math.round(from + (to - from) * (1 - (1 - k) ** 3)));
+    if (k < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
 function addResult(...children) {
   const li = document.createElement("li");
   li.append(...children);
@@ -225,7 +260,10 @@ async function handleFile(file) {
 
     const valid = items.filter((x) => Number.isFinite(x.timestamp) && x.timestamp > 0);
     const res = await sendToBackground(valid);
+    const before = grandTotal;
     grandTotal += res.added;
+    showTotal(before, grandTotal);
+    growPlant();
 
     const notes = [];
     if (res.duplicates) notes.push(`${fmt(res.duplicates)} already imported`);
@@ -257,12 +295,15 @@ async function handleFile(file) {
     }
   }
   $("summary").textContent = grandTotal
-    ? `${fmt(grandTotal)} past prompts added. Click the PromptPrint leaf icon and choose "All time" to see them.`
+    ? `Open PromptPrint from the toolbar and choose "All time" to see your full history.`
     : "";
 }
 
 async function handleFiles(files) {
+  if (!files.length) return;
+  setStep(2);
   for (const f of files) await handleFile(f);
+  if (grandTotal) setStep(3);
 }
 
 $("file").addEventListener("change", (e) => {
