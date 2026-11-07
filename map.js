@@ -190,7 +190,7 @@ function drawOverview() {
   if (!m.prompts) {
     panel.replaceChildren(
       el("h2", {}, "No usage in this period yet"),
-      el("p", { className: "muted" }, "Use ChatGPT, Claude or Gemini with PromptPrint installed, press Load data in the popup, or import your past chats. Then come back here."),
+      el("p", { className: "muted" }, "Use an AI chat site (ChatGPT, Claude, Gemini and more) with PromptPrint installed, press Load data in the popup, or import your past chats. Then come back here."),
       el("p", { className: "muted" }, "The map already shows how clean or dirty each country's electricity is.")
     );
     return;

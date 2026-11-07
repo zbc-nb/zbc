@@ -15,13 +15,25 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 - **Suggestions:** alternatives for your most common AI tasks, with estimated savings
 - **Private:** everything stays in your browser. The text of your prompts is never saved; only the category is.
 
+## Supported AI sites
+| Site | Live tracking | Reply length measured | Load data | History import |
+|---|---|---|---|---|
+| ChatGPT (chatgpt.com) | ✅ | ✅ | ✅ | ✅ |
+| Claude (claude.ai) | ✅ | ✅ | ✅ | ✅ |
+| Gemini (gemini.google.com) | ✅ | ✅ | ✅ | ✅ (experimental) |
+| Perplexity, Copilot, DeepSeek, Grok, Mistral Le Chat | ✅ (counted when you press send) | ❌ typical length assumed | ❌ | ❌ |
+
+**Not trackable live:** the phone and desktop apps, and any browser without the extension. Their chats *are* included in each AI's data export, so **Import past chat history** covers them for ChatGPT, Claude and Gemini.
+
+Energy per prompt is published only for Gemini and ChatGPT; every other AI uses an assumed 0.3 Wh (see `lib/constants.js`).
+
 ## Install (developer mode)
 1. Download this repository: **Code → Download ZIP** on GitHub, then unzip it. Or clone it with Git.
 2. In Chrome, go to `chrome://extensions`.
 3. Turn on **Developer mode** (top right).
 4. Click **Load unpacked** and choose the project folder (the one containing `manifest.json`).
 5. Pin the extension: click the puzzle-piece icon, then the pin next to **PromptPrint**.
-6. Use ChatGPT, Claude or Gemini as usual. Click the icon and press **⟳ Load data** to also pick up chats already open in your tabs, or **Import past chat history** for older chats.
+6. Use any supported AI site as usual. Click the icon and press **⟳ Load data** to also pick up chats already open in your tabs, or **Import past chat history** for older chats.
 
 After changing code, click the reload button on the extension's card in `chrome://extensions`, then refresh any open AI tabs.
 

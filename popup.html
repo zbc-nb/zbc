@@ -42,7 +42,7 @@
 
   <section id="empty" class="card empty" hidden>
     <p>No AI usage in this period yet.</p>
-    <p class="muted">Chat on ChatGPT, Claude or Gemini and it appears here. Press <strong>Load data</strong> to pick up chats open in your tabs, or import your past chats.</p>
+    <p class="muted">Chat on ChatGPT, Claude, Gemini, Perplexity, Copilot, DeepSeek, Grok or Mistral and it appears here. Press <strong>Load data</strong> to pick up chats open in your tabs, or import your past chats.</p>
     <p class="muted" id="empty-older" hidden>You have older usage: pick <strong>All time</strong> at the top.</p>
   </section>
 
@@ -75,11 +75,7 @@
   <details class="card">
     <summary>Log a prompt manually</summary>
     <form id="manual-form">
-      <select id="manual-site">
-        <option value="chatgpt">ChatGPT</option>
-        <option value="claude">Claude</option>
-        <option value="gemini">Gemini</option>
-      </select>
+      <select id="manual-site" aria-label="Which AI"></select>
       <textarea id="manual-text" rows="2" placeholder="What did you ask? (only the category is saved)" required></textarea>
       <button type="submit">Log it</button>
     </form>

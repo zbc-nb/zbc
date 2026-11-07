@@ -103,7 +103,7 @@ function addUniqueEvents(items, { source, beforeInstallOnly = false }) {
 }
 
 // ---------- "Load data": check open AI tabs for prompts not yet counted ----------
-const AI_TAB_URLS = ["https://chatgpt.com/*", "https://chat.openai.com/*", "https://claude.ai/*", "https://gemini.google.com/*"];
+const AI_TAB_URLS = chrome.runtime.getManifest().host_permissions;
 
 async function scanTab(tab) {
   const ask = () => chrome.tabs.sendMessage(tab.id, { type: "scan-page" });

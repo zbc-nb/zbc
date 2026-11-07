@@ -5,6 +5,19 @@
 const SITE_INFO = Object.fromEntries(
   Object.entries(PP.SITES).map(([id, s]) => [id, { name: s.name, color: PP.siteColor(id) }])
 );
+SITE_INFO.other = { name: "Other AIs", color: PP.siteColor("other") };
+
+// Charts stay readable with at most 5 AIs: smaller ones are grouped as "Other AIs".
+// Each AI keeps its own color whatever its rank.
+const MAX_SITES_SHOWN = 5;
+function foldSites(events) {
+  const counts = {};
+  for (const e of events) counts[e.site] = (counts[e.site] ?? 0) + 1;
+  const ranked = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  if (ranked.length <= MAX_SITES_SHOWN) return events;
+  const keep = new Set(ranked.slice(0, MAX_SITES_SHOWN - 1));
+  return events.map((e) => (keep.has(e.site) ? e : { ...e, site: "other" }));
+}
 
 // Lower-impact alternatives for each kind of task.
 const ALTERNATIVES = {
@@ -289,10 +302,11 @@ async function render() {
   $("empty-older").hidden = !(events.length && !current.length);
 
   renderTotals(current, previous);
-  renderPie(current);
-  renderCategories(current);
+  const shown = foldSites(current);
+  renderPie(shown);
+  renderCategories(shown);
   renderTimeline(current);
-  renderSuggestions(current);
+  renderSuggestions(shown);
 }
 
 // Restore the last period picked. With no choice saved yet, show "All time"
@@ -329,7 +343,7 @@ $("load-btn").addEventListener("click", async () => {
     const res = await chrome.runtime.sendMessage({ type: "load-recent" });
     if (!res?.ok) throw new Error(res?.error ?? "unknown error");
     status.textContent = !res.tabs
-      ? "No ChatGPT, Claude or Gemini tabs are open. Open your chats in tabs, then press Load data."
+      ? "No AI chat tabs are open. Open your chats in tabs, then press Load data."
       : `Checked ${res.tabsRead} of ${res.tabs} AI tab${res.tabs === 1 ? "" : "s"}: ` +
         `${res.found} prompt${res.found === 1 ? "" : "s"} on screen, ${res.added} new added.`;
   } catch (e) {
@@ -362,6 +376,10 @@ $("manual-form").addEventListener("submit", async (e) => {
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.events || changes.country) render();
 });
+
+$("manual-site").replaceChildren(
+  ...Object.entries(PP.SITES).map(([id, s]) => el("option", { value: id }, s.name))
+);
 
 setupEquivalentSelect();
 setupPeriodSelect().then(render);

@@ -1,20 +1,31 @@
-// content.js — runs inside ChatGPT, Claude and Gemini pages.
-// Watches the page for new messages YOU send, waits for the AI's reply to
-// finish, then sends one event to background.js. Nothing leaves your computer.
+// content.js: runs inside AI chat websites (see SITES below).
+// Notices each message YOU send, waits for the AI's reply to finish, then
+// sends one event to background.js. Nothing leaves your computer.
 
 (() => {
   // Note: "Load data" re-adds this script only to tabs where it isn't responding
   // (e.g. after the extension was reloaded), so it doesn't need a run-once guard.
-  const host = location.hostname;
-  const SITE = host.includes("claude.ai")
-    ? "claude"
-    : host.includes("gemini.google.com")
-    ? "gemini"
-    : "chatgpt";
 
-  // Where each site puts user messages and AI replies.
-  // These sites change their HTML often — if tracking stops working,
-  // open DevTools (F12), inspect a message, and update these selectors.
+  // Website → AI name used in the data. Keep in sync with lib/constants.js and manifest.json.
+  const SITES = {
+    "chatgpt.com": "chatgpt",
+    "chat.openai.com": "chatgpt",
+    "claude.ai": "claude",
+    "gemini.google.com": "gemini",
+    "www.perplexity.ai": "perplexity",
+    "copilot.microsoft.com": "copilot",
+    "chat.deepseek.com": "deepseek",
+    "grok.com": "grok",
+    "chat.mistral.ai": "mistral",
+  };
+  const SITE = SITES[location.hostname];
+  if (!SITE) return;
+
+  // Where some sites put user messages and AI replies, which lets us measure
+  // reply length and power "Load data". These sites change their HTML often.
+  // If tracking stops working, open DevTools (F12), inspect a message, and
+  // update these selectors. Sites not listed here are still tracked: each
+  // prompt is counted when you press send, with a typical reply length.
   const SELECTORS = {
     chatgpt: {
       user: '[data-message-author-role="user"]',
@@ -22,14 +33,14 @@
     },
     claude: {
       user: '[data-testid="user-message"]',
-      assistant: ".font-claude-response, [data-is-streaming]",
+      assistant: ".font-claude-response, .font-claude-message, [data-is-streaming]",
     },
     gemini: {
       user: "user-query",
       assistant: "model-response",
     },
   };
-  const sel = SELECTORS[SITE];
+  const sel = SELECTORS[SITE] ?? null;
 
   const SEND_WINDOW_MS = 15000; // a sent message must appear within 15 s of pressing send
   const STABLE_MS = 2500; // reply counts as finished after this long unchanged
@@ -38,31 +49,68 @@
   const seen = new WeakSet();
   let pending = null; // the prompt we're waiting on a reply for
 
+  // ---------- Noticing when you send a message ----------
   // Only messages YOU send count. Messages that appear because you opened an
   // old conversation aren't preceded by a send, so they're ignored. (Watching
   // for a send works even when a new chat changes the page address.)
   let sendsWaiting = 0;
   let lastSendAt = 0;
-  function noteSend() {
-    sendsWaiting = Math.min(sendsWaiting + 1, 3);
-    lastSendAt = Date.now();
+  let lastSendText = "";
+
+  // The chat box: a multi-line text area or rich-text editor, not a small
+  // search or rename field.
+  const isTextBox = (t) =>
+    t instanceof Element &&
+    (t.matches("textarea") || t.isContentEditable) &&
+    (t.closest("textarea, [contenteditable=true]") ?? t).getBoundingClientRect().width > 200;
+
+  function composerNear(el) {
+    if (isTextBox(document.activeElement)) return document.activeElement;
+    for (let node = el; node; node = node.parentElement) {
+      const box = [...node.querySelectorAll("textarea, [contenteditable=true]")].find(isTextBox);
+      if (box) return box;
+    }
+    return null;
   }
 
-  const isTextBox = (t) =>
-    t instanceof Element && (t.matches("textarea, input[type=text]") || t.isContentEditable);
+  const boxText = (box) => ((box?.value ?? box?.innerText ?? "") || "").trim();
+
+  function noteSend(text) {
+    if (!text) return; // nothing typed: not a real send
+    // Enter, the send button and the form's submit can all fire for one send.
+    if (Date.now() - lastSendAt < 1000 && text === lastSendText) return;
+    lastSendAt = Date.now();
+    lastSendText = text;
+    if (!sel) {
+      // A site without known selectors: count it now with a typical reply length.
+      send({ site: SITE, promptText: text, responseChars: 0 });
+      return;
+    }
+    sendsWaiting = Math.min(sendsWaiting + 1, 3);
+  }
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey && !e.isComposing && isTextBox(e.target)) noteSend();
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing && isTextBox(e.target)) {
+      noteSend(boxText(e.target.closest("textarea, [contenteditable=true]") ?? e.target));
+    }
   }, true);
 
   document.addEventListener("click", (e) => {
     const btn = e.target instanceof Element && e.target.closest("button, [role=button]");
     if (!btn) return;
     const label = `${btn.getAttribute("aria-label") ?? ""} ${btn.getAttribute("data-testid") ?? ""} ${btn.className}`;
-    if (/send|submit/i.test(label)) noteSend();
+    if (/send|submit/i.test(label)) noteSend(boxText(composerNear(btn)));
   }, true);
 
-  document.addEventListener("submit", noteSend, true);
+  document.addEventListener("submit", (e) => noteSend(boxText(composerNear(e.target))), true);
+
+  // If the site's layout changed and your message never showed up where we
+  // look for it, still count the prompt (with a typical reply length).
+  function expireSends() {
+    if (!sendsWaiting || Date.now() - lastSendAt <= SEND_WINDOW_MS) return;
+    sendsWaiting = 0;
+    send({ site: SITE, promptText: lastSendText, responseChars: 0 });
+  }
 
   const textOf = (el) => (el?.innerText || el?.textContent || "").trim();
 
@@ -108,6 +156,7 @@
   // "Load data" button: list every prompt visible on this page with its reply
   // length. background.js skips the ones already counted.
   function scanPage() {
+    if (!sel) return []; // this site's layout isn't mapped yet
     const items = [];
     let current = null;
     for (const el of document.querySelectorAll(`${sel.user}, ${sel.assistant}`)) {
@@ -131,7 +180,8 @@
   });
 
   function scanForNewPrompts() {
-    if (sendsWaiting && Date.now() - lastSendAt > SEND_WINDOW_MS) sendsWaiting = 0;
+    if (!sel) return;
+    expireSends();
 
     for (const el of document.querySelectorAll(sel.user)) {
       if (seen.has(el)) continue;
@@ -160,7 +210,7 @@
   }
 
   function checkReply() {
-    if (!pending) return;
+    if (!pending || !sel) return;
     if (!pending.userEl.isConnected) {
       // The site re-drew the chat; find our prompt again by its text.
       const again = [...document.querySelectorAll(sel.user)].reverse().find((u) => textOf(u) === pending.promptText);
