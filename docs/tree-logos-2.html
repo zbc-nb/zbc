@@ -1,0 +1,54 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&family=Manrope:wght@800&display=swap">
+<style>
+body{margin:0;padding:32px;background:#f7f9f5;font-family:"DM Sans",sans-serif;color:#293c33;width:1180px}
+h1{font-family:Manrope;font-size:30px;letter-spacing:-1px;color:#234b34;margin:0 0 4px}
+.sub{margin:0 0 24px;color:#5f6b5b}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{background:#fff;border:1px solid #e1e7dc;border-radius:16px;padding:20px}
+.row{display:flex;align-items:center;gap:18px}
+.big{width:120px;height:120px}
+.sizes{display:flex;align-items:flex-end;gap:12px;margin-left:auto}
+.sizes svg:nth-child(1){width:16px;height:16px}.sizes svg:nth-child(2){width:32px;height:32px}.sizes svg:nth-child(3){width:48px;height:48px}
+.bars{display:flex;gap:8px;margin-top:10px}
+.bar{border-radius:8px;padding:6px 8px;display:flex;gap:8px;align-items:center;font-size:11px}
+.bar svg{width:16px;height:16px}
+.dark{background:#202124;color:#bbb}.light{background:#dee1e6;color:#555}
+h2{font-family:Manrope;font-size:18px;margin:12px 0 2px;color:#234b34}
+.style{font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#7e887b}
+p{margin:4px 0 0;font-size:13px;color:#5f6b5b;line-height:1.45}
+</style></head><body>
+<h1>Evergreen tree logos: more styles</h1>
+<p class="sub">Nine different visual styles, each at 16 / 32 / 48 px and on dark and light toolbars.</p>
+<div class="grid" id="grid"></div>
+<script>
+const G='#264e36', S='#89ad63', L='#eff6df', D='#173826', M='#3f7d4f', A='#f2c94c', C='#d9774f';
+const logos = [
+ {style:'Emblem / park badge', name:'G · Trail patch', why:'Like a national-park patch: a pine and mountains in a round badge. Outdoorsy and trustworthy.',
+  svg:`<circle cx="32" cy="32" r="30" fill="${L}" stroke="${G}" stroke-width="4"/><circle cx="32" cy="32" r="23" fill="${G}"/><path d="M9 46 L22 30 L30 39 L40 26 L55 46 Z" fill="${M}"/><path d="M32 14 L39 25 H35 L41 34 H36 L43 44 H21 L28 34 H23 L29 25 H25 Z" fill="${L}"/><rect x="30" y="44" width="4" height="5" fill="${L}"/>`},
+ {style:'Negative space', name:'H · Cut-out pine', why:'The tree is carved out of a solid green circle, so it reads as both a dot and a tree. Minimal and striking.',
+  svg:`<defs><mask id="m1"><rect width="64" height="64" fill="#fff"/><path d="M32 10 L43 25 H37 L47 39 H40 L50 52 H14 L24 39 H17 L27 25 H21 Z" fill="#000"/><rect x="29" y="52" width="6" height="7" fill="#000"/></mask></defs><circle cx="32" cy="32" r="31" fill="${G}" mask="url(#m1)"/>`},
+ {style:'Isometric / 3D', name:'I · Faceted cone', why:'A 3D pine with lit and shaded sides, like a low-poly game object. Feels techy and dimensional.',
+  svg:`<rect width="64" height="64" rx="15" fill="${L}"/><path d="M32 6 L14 48 L32 56 Z" fill="${S}"/><path d="M32 6 L50 48 L32 56 Z" fill="${M}"/><path d="M32 6 L23 27 L32 31 Z" fill="${L}" opacity=".45"/><path d="M14 48 L32 56 L50 48 L32 44 Z" fill="${G}"/>`},
+ {style:'Pixel art', name:'J · 8-bit pine', why:'A pixel-grid pine: playful and retro, and pixels stay crisp at tiny sizes by nature.',
+  svg:`<rect width="64" height="64" rx="12" fill="${G}"/>${[[28,8,8],[24,16,16],[20,24,24],[24,28,16],[16,36,32],[20,40,24],[12,48,40]].map(([x,y,w])=>`<rect x="${x}" y="${y}" width="${w}" height="8" fill="${L}"/>`).join('')}<rect x="28" y="56" width="8" height="4" fill="${S}"/><rect x="36" y="20" width="4" height="4" fill="${A}"/><rect x="24" y="40" width="4" height="4" fill="${C}"/>`},
+ {style:'Monoline', name:'K · One-line pine', why:'A whole pine drawn with one continuous line: calm, thoughtful, "mindful use". Best above 32px.',
+  svg:`<rect width="64" height="64" rx="15" fill="${L}"/><path d="M32 56 V48 H12 L23 36 H17 L27 24 H22 L32 10 L42 24 H37 L47 36 H41 L52 48 H32" fill="none" stroke="${G}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`},
+ {style:'Gradient / glossy', name:'L · Glow pine', why:'A smooth gradient pine with a soft glow, like modern app icons. Eye-catching in the toolbar.',
+  svg:`<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f6143"/><stop offset="1" stop-color="#0f2a1b"/></linearGradient><linearGradient id="tr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9f99d"/><stop offset="1" stop-color="#4cc38a"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#bg)"/><circle cx="32" cy="34" r="22" fill="#4cc38a" opacity=".18"/><path d="M32 9 L44 25 H38 L48 38 H41 L51 51 H13 L23 38 H16 L26 25 H20 Z" fill="url(#tr)" stroke="url(#tr)" stroke-width="1.5" stroke-linejoin="round"/><rect x="29" y="51" width="6" height="6" rx="1.5" fill="#d9f99d"/>`},
+ {style:'Woodcut / stamp', name:'M · Rubber stamp', why:'Rough-edged stamp look with an inked pine: handmade and eco-friendly, like recycled packaging.',
+  svg:`<rect x="4" y="4" width="56" height="56" rx="8" fill="none" stroke="${G}" stroke-width="4" stroke-dasharray="7 3"/><rect x="10" y="10" width="44" height="44" rx="4" fill="${G}"/><path d="M32 14 L41 26 H36 L44 37 H38 L46 48 H18 L26 37 H20 L28 26 H23 Z" fill="${L}"/><path d="M22 44 h20 M25 33 h14 M28 22 h8" stroke="${G}" stroke-width="1.6" opacity=".6"/><rect x="30" y="48" width="4" height="4" fill="${L}"/>`},
+ {style:'Letterform', name:'N · Pine "E"', why:'The capital E is made of three branches growing off a trunk: the brand name and the tree in one shape.',
+  svg:`<rect width="64" height="64" rx="15" fill="${G}"/><rect x="18" y="10" width="7" height="44" rx="2" fill="${S}"/><path d="M25 14 C34 10 42 12 48 16 C42 20 34 20 25 18 Z" fill="${L}"/><path d="M25 30 C32 27 38 28 43 32 C38 36 32 36 25 34 Z" fill="${L}"/><path d="M25 46 C34 42 42 44 48 48 C42 52 34 52 25 50 Z" fill="${L}"/>`},
+ {style:'Duotone landscape', name:'O · Pine at dusk', why:'A pine silhouette in front of a big setting sun with a lake line: warm and memorable, very "Environment track".',
+  svg:`<rect width="64" height="64" rx="15" fill="${L}"/><circle cx="32" cy="36" r="20" fill="${A}"/><rect x="6" y="44" width="52" height="4" fill="${S}"/><path d="M32 12 L41 25 H36 L44 36 H38 L46 46 H18 L26 36 H20 L28 25 H23 Z" fill="${G}"/><rect x="30" y="46" width="4" height="6" fill="${G}"/><path d="M14 52 h10 M30 54 h12 M46 51 h6" stroke="${S}" stroke-width="2" stroke-linecap="round"/>`},
+];
+const mk = (s, cls='') => `<svg class="${cls}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+document.getElementById('grid').innerHTML = logos.map((l, i) => {
+  // Give each copy unique ids so gradients/masks don't clash.
+  const svg = (k) => l.svg.replace(/id="(\w+)"/g, `id="$1_${i}_${k}"`).replace(/url\(#(\w+)\)/g, `url(#$1_${i}_${k})`);
+  return `<div class="card"><div class="row">${mk(svg(0),'big')}<div class="sizes">${mk(svg(1))}${mk(svg(2))}${mk(svg(3))}</div></div>
+<div class="bars"><div class="bar dark">${mk(svg(4))} dark</div><div class="bar light">${mk(svg(5))} light</div></div>
+<h2>${l.name}</h2><div class="style">${l.style}</div><p>${l.why}</p></div>`;
+}).join('');
+</script></body></html>
