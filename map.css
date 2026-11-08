@@ -216,3 +216,7 @@ h1 { font-weight: 800; }
 .card, .map-card, .panel, .steps .card { border: 1px solid var(--border); border-radius: 14px; box-shadow: none; }
 button, select { border-radius: 10px; }
 .stack span { min-width: 4px; }
+.badge { display: inline-block; margin-left: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--text); }
+.badge:empty { display: none; }
+.section-gap { margin-top: 22px; }
+.small-top { margin-top: -6px; font-size: 12px; }

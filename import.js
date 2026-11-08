@@ -267,7 +267,7 @@ async function handleFile(file) {
 
     const notes = [];
     if (res.duplicates) notes.push(`${fmt(res.duplicates)} already imported`);
-    if (res.afterInstall) notes.push(`${fmt(res.afterInstall)} skipped because PromptPrint already tracked them`);
+    if (res.afterInstall) notes.push(`${fmt(res.afterInstall)} skipped because Evergreen already tracked them`);
     li.replaceChildren(
       span("ok", `✓ ${site}: `),
       `${fmt(valid.length)} prompt${valid.length === 1 ? "" : "s"} found, ${fmt(res.added)} added.`,
@@ -295,7 +295,7 @@ async function handleFile(file) {
     }
   }
   $("summary").textContent = grandTotal
-    ? `Open PromptPrint from the toolbar and choose "All time" to see your full history.`
+    ? `Open Evergreen from the toolbar and choose "All time" to see your full history.`
     : "";
 }
 
@@ -324,4 +324,4 @@ drop.addEventListener("drop", (e) => {
 });
 
 // Exposed for testing in the console.
-globalThis.PromptPrintImport = { detectAndParse, openZip };
+globalThis.EvergreenImport = { detectAndParse, openZip };

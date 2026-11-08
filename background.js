@@ -3,7 +3,7 @@
 // energy and carbon, and saves the result. Raw prompt text is NEVER stored.
 
 // ---------- Emission assumptions: see lib/constants.js and README "Methodology" ----------
-importScripts("lib/constants.js");
+importScripts("lib/constants.js", "lib/grid-data.js", "lib/config.js");
 const { SITES, REFERENCE_REPLY_TOKENS, CHARS_PER_TOKEN } = PP;
 const GRID_G_PER_KWH = PP.DEFAULT_GRID_G_PER_KWH;
 
@@ -103,7 +103,7 @@ function addUniqueEvents(items, { source, beforeInstallOnly = false }) {
 }
 
 // ---------- Connected platforms (permissions) ----------
-// AI sites are optional permissions: PromptPrint only reads a site after the
+// AI sites are optional permissions: Evergreen only reads a site after the
 // person allows it (welcome page or the popup's switches), and stops the
 // moment they switch it off. The tracker is registered for allowed sites only.
 const AI_ORIGINS = chrome.runtime.getManifest().optional_host_permissions;
@@ -138,7 +138,7 @@ async function startInOpenTabs(origins) {
 }
 
 let syncQueue = Promise.resolve();
-const serialSync = (task) => (syncQueue = syncQueue.then(task).catch((e) => console.warn("[PromptPrint]", e)));
+const serialSync = (task) => (syncQueue = syncQueue.then(task).catch((e) => console.warn("[Evergreen]", e)));
 
 chrome.permissions.onAdded.addListener(({ origins }) =>
   serialSync(async () => {
@@ -176,7 +176,7 @@ async function loadRecentData() {
         tabsRead++;
       }
     } catch (e) {
-      console.warn("[PromptPrint] could not read tab", tab.url, e);
+      console.warn("[Evergreen] could not read tab", tab.url, e);
     }
   }
   const saved = await addUniqueEvents(items, { source: "scan" });
@@ -207,6 +207,101 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason === "install" || (reason === "update" && !origins?.length)) openWelcome();
 });
 
+// ---------- Sharing anonymous totals for the world map (opt-in) ----------
+// Stored settings: share = { on, installId, lastSharedAt, lastError }. The
+// country is the same "Your country" setting the map and popup use.
+// Every 6 hours (and right after opting in) the last 30 days are re-sent as
+// daily totals per AI. Re-sending is safe: the database replaces each day.
+const SHARE_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const localDay = (t) => {
+  const d = new Date(t);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+async function getShare() {
+  const { share = {} } = await chrome.storage.local.get("share");
+  return share;
+}
+async function saveShare(changes) {
+  const share = { ...(await getShare()), ...changes };
+  await chrome.storage.local.set({ share });
+  return share;
+}
+
+function dailyRows(events, country) {
+  const grid = PP.GRID.find((c) => c.code === country)?.grid ?? PP.DEFAULT_GRID_G_PER_KWH;
+  const since = Date.now() - SHARE_DAYS * DAY_MS;
+  const groups = new Map();
+  for (const e of events) {
+    if (e.demo || e.timestamp < since || !SITES[e.site]) continue;
+    const key = `${localDay(e.timestamp)}|${e.site}`;
+    const g = groups.get(key) ?? { day: localDay(e.timestamp), country, ai: e.site, prompts: 0, wh: 0, categories: {} };
+    g.prompts++;
+    g.wh += e.wh;
+    g.categories[e.category] = (g.categories[e.category] ?? 0) + 1;
+    groups.set(key, g);
+  }
+  // Rounded, and capped to the database's limits.
+  return [...groups.values()].map((g) => ({
+    ...g,
+    prompts: Math.min(g.prompts, 5000),
+    wh: Math.min(Math.round(g.wh * 1000) / 1000, 5000),
+    gco2e: Math.min(Math.round((g.wh / 1000) * grid * 1000) / 1000, 5000),
+  }));
+}
+
+async function countryCode() {
+  const { country } = await chrome.storage.local.get("country");
+  return PP.gridById.get(country ?? PP.guessCountryId())?.code ?? null;
+}
+
+async function shareUsage() {
+  const share = await getShare();
+  if (!share.on) return { ok: false, error: "Sharing is off." };
+  if (!PP.cloudConfigured()) return { ok: false, error: "Sharing isn't set up in this version (no database configured)." };
+  const country = await countryCode();
+  if (!country) return { ok: false, error: "Choose your country first." };
+  try {
+    const { events = [] } = await chrome.storage.local.get("events");
+    const rows = dailyRows(events, country);
+    if (rows.length) await PP.rpc("submit_usage", { p_install: share.installId, p_rows: rows });
+    await saveShare({ lastSharedAt: Date.now(), lastError: null, lastRows: rows.length });
+    return { ok: true, rows: rows.length };
+  } catch (e) {
+    await saveShare({ lastError: String(e.message ?? e) });
+    return { ok: false, error: String(e.message ?? e) };
+  }
+}
+
+async function setSharing({ on }) {
+  const share = await getShare();
+  const next = { on: !!on };
+  if (next.on && !(await countryCode())) throw new Error("Choose your country first.");
+  if (next.on && !share.installId) next.installId = crypto.randomUUID();
+  await saveShare(next);
+  return next.on ? shareUsage() : { ok: true };
+}
+
+async function deleteSharedData() {
+  const share = await getShare();
+  if (share.installId && PP.cloudConfigured()) await PP.rpc("delete_my_data", { p_install: share.installId });
+  // A fresh random ID next time, so nothing links old and new data.
+  await chrome.storage.local.set({ share: { on: false } });
+  return { ok: true };
+}
+
+// Changing country re-sends totals under the new country.
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.country) getShare().then((s) => s.on && shareUsage());
+});
+
+chrome.alarms.create("share", { periodInMinutes: 360 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "share") shareUsage();
+});
+
 // ---------- Messages from content.js, popup.js and import.js ----------
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
@@ -222,6 +317,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       case "open-welcome":
         await openWelcome();
         return { ok: true };
+      case "share-set":
+        return setSharing(msg);
+      case "share-now":
+        return shareUsage();
+      case "share-delete":
+        return deleteSharedData();
       case "clear":
         await updateEvents(() => ({ next: [], value: null }));
         return { ok: true };

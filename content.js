@@ -137,7 +137,7 @@
       chrome.runtime.sendMessage({ type: "ai-event", ...event });
     } catch (e) {
       // Happens after the extension is reloaded; refresh the page to fix.
-      console.debug("[PromptPrint] could not send event:", e);
+      console.debug("[Evergreen] could not send event:", e);
     }
   }
 
@@ -256,5 +256,5 @@
   // Don't lose a prompt if the tab is closed mid-reply.
   window.addEventListener("pagehide", finishPending);
 
-  console.debug(`[PromptPrint] tracking ${SITE}`);
+  console.debug(`[Evergreen] tracking ${SITE}`);
 })();

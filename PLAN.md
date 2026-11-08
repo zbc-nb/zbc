@@ -1,6 +1,6 @@
 # AI Carbon Footprint Tracker: Hackathon Plan (Environment Track)
 
-**Working name:** *PromptPrint*. Rename it to whatever the team likes.
+**Working name:** *Evergreen*. Rename it to whatever the team likes.
 
 **One-line pitch:** A browser extension that shows how you use AI chatbots, estimates the carbon each conversation costs, and suggests lower-impact alternatives for the tasks you lean on AI for most.
 
@@ -192,7 +192,7 @@ Include an estimated saving: "Switching half of your math prompts to Desmos woul
 3. **Insight (40 s):** Show the seeded week: "75% of my Claude use is math homework, about X g CO₂e, about the same as Y."
 4. **Action (30 s):** Show the suggestions: Desmos, Khan Academy, textbook, and the estimated savings.
 5. **Credibility (20 s):** Show the methodology: published figures, ranges shown, all data stays on the device.
-6. **Close (10 s):** "Use AI when it's worth it. PromptPrint shows you when it isn't."
+6. **Close (10 s):** "Use AI when it's worth it. Evergreen shows you when it isn't."
 
 ---
 

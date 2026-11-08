@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PromptPrint World Map</title>
+  <title>Evergreen World Map</title>
   <link rel="icon" href="assets/icon32.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap">
@@ -14,11 +14,21 @@
     <div class="brand">
       <img src="assets/icon32.png" alt="" width="28" height="28">
       <div>
-        <h1>Your AI footprint around the world</h1>
-        <p class="muted">The same AI use creates very different amounts of CO₂ depending on how a country makes its electricity.</p>
+        <h1>AI's footprint around the world</h1>
+        <p class="muted">How Evergreen users use AI in each country, and how much CO₂ each country's electricity adds. <span id="community-status" class="badge"></span></p>
       </div>
     </div>
     <div class="controls">
+      <label>
+        <span>Color the map by</span>
+        <select id="metric">
+          <option value="grid">Grid carbon intensity</option>
+          <option value="users">Evergreen users</option>
+          <option value="co2">CO₂ (last 30 days)</option>
+          <option value="perUser">CO₂ per user</option>
+          <option value="prompts">Prompts per user per day</option>
+        </select>
+      </label>
       <label>
         <span>Your usage from</span>
         <select id="period">
@@ -57,13 +67,13 @@
 
   <section class="card table-card">
     <div class="table-head">
-      <h2>Your CO₂ in each country</h2>
-      <span class="muted">Same prompts and electricity, different power grids</span>
+      <h2>Countries</h2>
+      <span class="muted" id="table-note">Sorted by the measure the map is colored by</span>
     </div>
     <div class="table-scroll">
       <table id="ranking">
         <thead>
-          <tr><th>#</th><th>Country</th><th class="num">Grid (g CO₂e/kWh)</th><th class="num">Your CO₂</th><th class="num">vs. your country</th></tr>
+          <tr><th>#</th><th>Country</th><th class="num">Evergreen users</th><th class="num">Their CO₂ (30 days)</th><th class="num">Grid (g CO₂e/kWh)</th><th class="num">Your CO₂ there</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -71,14 +81,14 @@
   </section>
 
   <footer class="notes muted">
-    <p><strong>About this data:</strong> everything about your usage is real, tracked by PromptPrint in this browser. Grid carbon intensity is approximate (Ember / Our World in Data, 2023). In reality the data center that answers a prompt may be in another country, so the "your country" figure is an estimate.</p>
-    <p>Comparing with other people's usage needs an opt-in sharing server, which isn't built yet (see the README). Until then, only your own data is shown.</p>
+    <p><strong>About this data:</strong> your own usage comes from this browser. Community figures are the anonymous daily totals Evergreen users chose to share over the last 30 days; countries with fewer than 3 sharing users are hidden. Grid carbon intensity is approximate (Ember / Our World in Data, 2023). In reality the data center that answers a prompt may be in another country, so per-country CO₂ is an estimate.</p>
   </footer>
 
   <script src="lib/d3.min.js"></script>
   <script src="lib/topojson-client.min.js"></script>
   <script src="lib/constants.js"></script>
   <script src="lib/grid-data.js"></script>
+  <script src="lib/config.js"></script>
   <script src="map.js"></script>
 </body>
 </html>

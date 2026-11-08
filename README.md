@@ -1,4 +1,4 @@
-# PromptPrint: AI Carbon Footprint Tracker
+# Evergreen: AI Carbon Footprint Tracker
 
 A Chrome extension that tracks how you use AI chatbots (ChatGPT, Claude, Gemini), estimates the carbon footprint of your prompts, and suggests lower-impact alternatives for the tasks you rely on AI for most.
 
@@ -17,8 +17,9 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 - **Suggestions:** lower-impact alternatives for the tasks you use AI for most (prompts are sorted into Math, Coding, Writing, Research, Brainstorm or Other behind the scenes).
 - **World map:** what your usage would emit on each country's power grid.
 - **AI icons:** each platform shows its real site icon from Chrome's own icon cache (the `favicon` permission, no network request). Sites you haven't visited yet show a colored letter badge until you do.
-- **Collapsible platforms list:** click **Your connected platforms** to collapse it to a row of the connected AIs' icons; PromptPrint remembers your choice.
-- **Private:** everything stays in your browser. Prompt text is never saved; only the category and lengths are.
+- **Collapsible platforms list:** click **Your connected platforms** to collapse it to a row of the connected AIs' icons; Evergreen remembers your choice.
+- **Private:** everything stays in your browser unless you opt in to map sharing. Prompt text is never saved; only the category and lengths are.
+- **Help build the world map (opt-in):** shares anonymous daily totals per AI (prompts, energy, CO₂, task categories, your country, a random ID) with a Supabase database. Off by default; switch off and delete everything you shared from the popup. The world map then shows each country's Evergreen users, prompts, CO₂ and favorite AIs (countries with fewer than 3 sharing users stay hidden). Setup: see **Setting up the shared database** below.
 
 ![The popup](docs/popup.png)
 
@@ -41,7 +42,7 @@ Energy per prompt is published only for Gemini and ChatGPT; every other AI uses 
 2. In Chrome, go to `chrome://extensions`.
 3. Turn on **Developer mode** (top right).
 4. Click **Load unpacked** and choose the project folder (the one containing `manifest.json`).
-5. Pin the extension: click the puzzle-piece icon, then the pin next to **PromptPrint**.
+5. Pin the extension: click the puzzle-piece icon, then the pin next to **Evergreen**.
 6. A welcome page opens: tick the AI platforms you use and click **Allow tracking on selected platforms**, then confirm Chrome's prompt.
 7. Use any connected AI site as usual. Click the icon and press **⟳ Load data** to also pick up chats already open in your tabs, or **Import past chat history** for older chats.
 
@@ -53,6 +54,8 @@ After changing code, click the reload button on the extension's card in `chrome:
 | `manifest.json` | Chrome's configuration: AI sites are *optional* permissions, granted per site by the user |
 | `welcome.html` / `welcome.css` / `welcome.js` | First-run page that explains what's tracked and asks permission per AI platform |
 | `lib/icons.js` | AI platform icons from Chrome's favicon cache, with letter-badge fallback |
+| `lib/config.js` | Supabase project URL and public key for map sharing (empty = sharing off) |
+| `supabase/setup.sql` | Database table and functions for anonymous shared totals |
 | `lib/ui.css` | Shared design tokens and components (colors, fonts, panels, buttons, switches) |
 | `content.js` | Runs on the AI sites. Spots each prompt you send and measures the reply length |
 | `background.js` | Registers the tracker only for allowed sites, categorizes prompts, estimates energy and carbon, saves events without duplicates, runs **Load data** |
@@ -65,14 +68,17 @@ After changing code, click the reload button on the extension's card in `chrome:
 | `data/countries-110m.json` | Country shapes (world-atlas v2.0.2, ISC license; Natural Earth, public domain) |
 | `assets/` | Icons |
 
-## Collecting data from many users (for a real world map)
-Right now each person's data stays in their own browser, so the map shows only **your own** usage. To compare many users by country:
+## Setting up the shared database
+Sharing is built in but needs a database before it can be switched on:
 
-1. **Ask first.** Add a clear opt-in switch ("Share anonymous weekly totals to improve the world map"), off by default, plus a privacy policy. The Chrome Web Store requires this for any data that leaves the browser.
-2. **Send only summaries, never prompts.** For example, once a week: `{ country, week, prompts, wh, gco2e, siteCounts, categoryCounts }`. Get the country from a dropdown the user picks, not from tracking their location.
-3. **Store them in a small backend,** such as Firebase or Supabase (both have free tiers). One table of weekly summaries is enough.
-4. **Add them up per country** on the server, and hide countries with fewer than ~20 users, so no one can be singled out.
-5. **Add the shared numbers to the map:** fetch the per-country totals in `map.js` and show them next to the user's own usage.
+1. Create a free project at **supabase.com**.
+2. In the project, open **SQL Editor → New query**, paste all of `supabase/setup.sql`, and click **Run**. This creates one table and three functions (`submit_usage`, `delete_my_data`, `community_stats`). The public key can only call those functions; it can't read or change the table directly.
+3. In **Project Settings → API**, copy the **Project URL** and the **anon public** key into `lib/config.js`. Never put the `service_role` key in the extension.
+4. Reload the extension. "Help build the world map" in the popup and the welcome page now work, and the map's **Color the map by** menu unlocks the community measures.
+
+**How it works:** once someone opts in, Evergreen re-sends their last 30 days as daily totals per AI every 6 hours (and right away when switched on). Each install has a random ID so it can update and delete its own rows. The map asks for per-country totals over the last 30 days; countries with fewer than 3 sharing users are left out (`minUsersPerCountry` in `lib/config.js`).
+
+**Before publishing on the Chrome Web Store:** add a privacy policy and declare the shared data in the listing. For a public launch, also add rate limiting (anyone with the public key could submit made-up totals; values are capped, which is fine for a hackathon).
 
 ## Past history (before installing)
 Live tracking only sees prompts sent after installing. For older chats, use **Import my real chat history** in the popup. It reads the export ZIPs from ChatGPT (Settings → Data controls → Export data), Claude (Settings → Privacy → Export data) and Google Takeout (My Activity → Gemini Apps, JSON format). Only chats from before the install date are imported, and re-importing never double-counts.
@@ -103,7 +109,7 @@ All values can be changed at the top of `background.js` and `popup.js`. Verify e
 
 ## Troubleshooting
 - **Nothing is tracked:** check **Your connected platforms** in the popup; the site's switch must be on.
-- **Prompts aren't being counted:** the AI sites change their HTML often. Open the site, press F12, inspect one of your messages, and update `SELECTORS` at the top of `content.js`. The Console shows `[PromptPrint] tracking <site>` when the script is running.
+- **Prompts aren't being counted:** the AI sites change their HTML often. Open the site, press F12, inspect one of your messages, and update `SELECTORS` at the top of `content.js`. The Console shows `[Evergreen] tracking <site>` when the script is running.
 - **"Extension context invalidated" in the console:** you reloaded the extension; refresh the AI tab.
 
 ## Team

@@ -525,7 +525,7 @@ function renderPlatforms(events) {
         role: "switch",
         "aria-checked": String(on),
         "aria-label": `Track ${info.name}`,
-        title: on ? `Stop tracking ${info.name}` : `Allow PromptPrint to track ${info.name}`,
+        title: on ? `Stop tracking ${info.name}` : `Allow Evergreen to track ${info.name}`,
       });
       toggle.addEventListener("click", () => toggleSite(site, toggle));
       return el("div", { className: "platform-row" },
@@ -679,8 +679,61 @@ $("water-rate").addEventListener("change", async () => {
   $("water-status").textContent = "Saved. All water estimates have been recalculated.";
 });
 
+// ---------- Help build the world map (opt-in sharing) ----------
+// The country here is the same "Your country" setting the map uses.
+function setupShare() {
+  const select = $("share-country");
+  select.replaceChildren(
+    el("option", { value: "" }, "Choose…"),
+    ...[...PP.GRID].sort((a, b) => a.name.localeCompare(b.name)).map((c) => el("option", { value: c.id }, c.name))
+  );
+  select.addEventListener("change", () => chrome.storage.local.set({ country: select.value || null }));
+
+  $("share-switch").addEventListener("click", async () => {
+    const on = $("share-switch").getAttribute("aria-checked") !== "true";
+    if (on && !select.value) {
+      $("share-status").textContent = "Choose your country first.";
+      select.focus();
+      return;
+    }
+    $("share-switch").disabled = true;
+    $("share-status").textContent = on ? "Sharing…" : "";
+    const res = await chrome.runtime.sendMessage({ type: "share-set", on });
+    $("share-switch").disabled = false;
+    if (!res?.ok && res?.error) $("share-status").textContent = res.error;
+    renderShare();
+  });
+
+  $("share-delete").addEventListener("click", async () => {
+    if (!confirm("Delete all the anonymous totals this browser has shared, and turn sharing off?")) return;
+    const res = await chrome.runtime.sendMessage({ type: "share-delete" });
+    $("share-status").textContent = res?.ok ? "Deleted. Sharing is off." : `Couldn't delete: ${res?.error ?? "unknown error"}`;
+    renderShare(false);
+  });
+}
+
+async function renderShare(updateStatus = true) {
+  const { share = {}, country } = await chrome.storage.local.get(["share", "country"]);
+  const id = country ?? PP.guessCountryId();
+  $("share-country").value = id ?? "";
+  $("share-switch").setAttribute("aria-checked", String(!!share.on));
+  $("share-delete").hidden = !share.installId;
+  if (!PP.cloudConfigured()) {
+    $("share-switch").disabled = true;
+    $("share-status").textContent = "Sharing isn't set up in this version yet (no database is configured).";
+    return;
+  }
+  if (!updateStatus || !share.on) return; // keep messages like "Deleted. Sharing is off."
+  $("share-status").textContent = share.lastError
+      ? `Last attempt failed: ${share.lastError}`
+      : share.lastSharedAt
+        ? `Sharing is on. Last shared ${new Date(share.lastSharedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.`
+        : "Sharing is on.";
+}
+
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.events || changes.country || changes.waterRate) render();
+  if (changes.share || changes.country) renderShare();
 });
 chrome.permissions.onAdded.addListener(async () => { await loadGranted(); renderPlatforms(state.current); });
 chrome.permissions.onRemoved.addListener(async () => { await loadGranted(); renderPlatforms(state.current); });
@@ -688,6 +741,8 @@ chrome.permissions.onRemoved.addListener(async () => { await loadGranted(); rend
 // ---------- Start ----------
 (async function init() {
   setupEquivalentSelect();
+  setupShare();
+  renderShare();
   const { range, equivChoice, waterRate, platformsOpen: open } = await chrome.storage.local.get(["range", "equivChoice", "waterRate", "platformsOpen"]);
   if (typeof open === "boolean") platformsOpen = open;
   applyPlatformsOpen();

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>PromptPrint</title>
+  <title>Evergreen</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap">
   <link rel="stylesheet" href="lib/ui.css">
@@ -10,7 +10,7 @@
 </head>
 <body>
   <header class="topbar">
-    <span class="brand">promptprint<span class="brand-dot">.</span></span>
+    <span class="brand">evergreen<span class="brand-dot">.</span></span>
     <span class="stored"><span class="status-dot" aria-hidden="true"></span>Stored locally</span>
   </header>
 
@@ -24,7 +24,7 @@
 
   <section id="connect-banner" class="connect-banner" hidden>
     <strong>Tracking is off.</strong>
-    <span>Choose which AI platforms PromptPrint may read.</span>
+    <span>Choose which AI platforms Evergreen may read.</span>
     <button id="connect-btn" class="btn">Connect platforms</button>
   </section>
 
@@ -176,6 +176,24 @@
     </div>
   </section>
 
+  <section class="panel share" aria-labelledby="share-title">
+    <div class="panel-head">
+      <div>
+        <h2 id="share-title">Help build the world map</h2>
+        <p class="sub">Share anonymous daily totals. Off unless you turn it on.</p>
+      </div>
+      <button id="share-switch" class="switch" role="switch" aria-checked="false" aria-labelledby="share-title"></button>
+    </div>
+    <label class="field-label" for="share-country">Your country</label>
+    <select id="share-country"></select>
+    <details class="share-what">
+      <summary>What's shared?</summary>
+      <p>For each day and AI: how many prompts, the estimated energy and CO₂, and task categories, with your country and a random ID. Never your chat text, name, email, or exact times. Countries with fewer than 3 sharing users stay hidden on the map.</p>
+    </details>
+    <p id="share-status" class="note" aria-live="polite"></p>
+    <button id="share-delete" class="linkish">Delete everything I've shared</button>
+  </section>
+
   <details class="panel manual">
     <summary>Log a prompt manually</summary>
     <form id="manual-form">
@@ -214,6 +232,7 @@
   <script src="lib/constants.js"></script>
   <script src="lib/grid-data.js"></script>
   <script src="lib/icons.js"></script>
+  <script src="lib/config.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

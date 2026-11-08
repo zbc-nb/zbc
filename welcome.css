@@ -27,3 +27,8 @@ main { max-width: 680px; margin: 0 auto; padding: 0 16px 48px; }
 .result { margin: 10px 0 0; font-weight: 600; }
 .result.ok { color: var(--good); }
 .result.warn { color: var(--warn); }
+.share-opt { border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin: 0 0 16px; display: grid; gap: 10px; }
+.share-check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.share-check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--primary); flex-shrink: 0; }
+.share-check small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.share-country { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }

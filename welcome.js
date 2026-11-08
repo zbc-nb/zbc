@@ -67,9 +67,18 @@ $("allow").addEventListener("click", async () => {
     const remove = unchosen.flatMap(PP.originsFor);
     if (remove.length) await chrome.permissions.remove({ origins: remove }).catch(() => {});
     const names = chosen.map((id) => PP.SITES[id].name).join(", ");
+
+    // Optional: share anonymous totals for the world map.
+    let shareNote = "";
+    if (ok && $("share-opt").checked) {
+      await chrome.storage.local.set({ country: $("share-country").value || null });
+      const res = await chrome.runtime.sendMessage({ type: "share-set", on: true });
+      shareNote = res?.ok ? " Thanks for helping build the world map!" : ` (Sharing couldn't start: ${res?.error ?? "unknown error"})`;
+    }
+
     result.className = ok ? "result ok" : "result warn";
     result.textContent = ok
-      ? `Tracking is on for ${names}. You can close this page.`
+      ? `Tracking is on for ${names}.${shareNote} You can close this page.`
       : "Chrome didn't grant access. Nothing is being tracked. You can try again anytime.";
   } catch (e) {
     result.className = "result warn";
@@ -77,5 +86,23 @@ $("allow").addEventListener("click", async () => {
   }
   renderList();
 });
+
+// Country list for sharing (same setting the map and popup use).
+(async function setupShare() {
+  const { country } = await chrome.storage.local.get("country");
+  const select = $("share-country");
+  for (const c of [...PP.GRID].sort((a, b) => a.name.localeCompare(b.name))) {
+    const o = document.createElement("option");
+    o.value = c.id;
+    o.textContent = c.name;
+    select.append(o);
+  }
+  select.value = country ?? PP.guessCountryId() ?? "";
+  if (!PP.cloudConfigured()) {
+    $("share-opt").disabled = true;
+    $("share-opt").closest(".share-opt").querySelector("small").textContent =
+      "Coming soon: sharing isn't set up in this version yet.";
+  }
+})();
 
 renderList();
