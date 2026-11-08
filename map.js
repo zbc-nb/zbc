@@ -39,7 +39,7 @@ async function loadCommunity() {
     state.community = new Map(rows.map((r) => [r.country, { ...r, prompts: Number(r.prompts) }]));
     const users = rows.reduce((n, r) => n + r.users, 0);
     status.textContent = rows.length
-      ? `${PP.fmtNum(users)} sharing users in ${rows.length} countr${rows.length === 1 ? "y" : "ies"}`
+      ? `${PP.fmtNum(users)} sharing user${users === 1 ? "" : "s"} in ${rows.length} countr${rows.length === 1 ? "y" : "ies"}`
       : "No countries have enough sharing users yet";
   } catch (e) {
     status.textContent = "Couldn't load community data";
@@ -450,8 +450,11 @@ function refresh() {
 
   // Color-by choice: community measures need community data.
   const { mapMetric } = await chrome.storage.local.get("mapMetric");
-  for (const opt of $("metric").options) opt.disabled = !!METRICS[opt.value].community && !state.community?.size;
   const usable = (v) => METRICS[v] && !(METRICS[v].community && !state.community?.size);
+  const updateMetricOptions = () => {
+    for (const opt of $("metric").options) opt.disabled = !!METRICS[opt.value].community && !state.community?.size;
+  };
+  updateMetricOptions();
   state.metric = usable(mapMetric) ? mapMetric : state.community?.size ? "users" : "grid";
   $("metric").value = state.metric;
   $("metric").addEventListener("change", () => {
@@ -461,6 +464,32 @@ function refresh() {
   });
 
   refresh();
+
+  // Keep the community data fresh while the map is open: every minute, and
+  // when you come back to this tab.
+  let hadData = !!state.community?.size;
+  let lastLoad = Date.now();
+  async function reloadCommunity() {
+    if (!PP.cloudConfigured() || document.hidden) return;
+    lastLoad = Date.now();
+    await loadCommunity();
+    updateMetricOptions();
+    // First community data arrived: switch from the grid view to users.
+    if (!hadData && state.community?.size && state.metric === "grid" && !mapMetric) {
+      state.metric = "users";
+      $("metric").value = "users";
+    }
+    if (!usable(state.metric)) {
+      state.metric = "grid";
+      $("metric").value = "grid";
+    }
+    hadData = !!state.community?.size;
+    refresh();
+  }
+  setInterval(reloadCommunity, 60000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && Date.now() - lastLoad > 15000) reloadCommunity();
+  });
 
   $("period").addEventListener("change", () => {
     chrome.storage.local.set({ period: $("period").value });

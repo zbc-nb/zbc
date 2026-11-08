@@ -77,7 +77,7 @@ Sharing is built in but needs a database before it can be switched on:
 3. In **Project Settings → API**, copy the **Project URL** and the **anon public** key into `lib/config.js`. Never put the `service_role` key in the extension.
 4. Reload the extension. "Help build the world map" in the popup and the welcome page now work, and the map's **Color the map by** menu unlocks the community measures.
 
-**How it works:** once someone opts in, Evergreen re-sends their last 30 days as daily totals per AI every 6 hours (and right away when switched on). Each install has a random ID so it can update and delete its own rows. The map asks for per-country totals over the last 30 days; countries with fewer than 3 sharing users are left out (`minUsersPerCountry` in `lib/config.js`).
+**How it works:** once someone opts in, Evergreen re-sends their last 30 days as daily totals per AI right away, about a minute after any new AI use (one upload per minute at most), and every 6 hours as a backup. An open world map re-checks the database every minute, so new prompts show up on it within about 2 minutes. Each install has a random ID so it can update and delete its own rows. The map asks for per-country totals over the last 30 days; countries with fewer than 3 sharing users are left out (`minUsersPerCountry` in `lib/config.js`).
 
 **Before publishing on the Chrome Web Store:** add a privacy policy and declare the shared data in the listing. For a public launch, also add rate limiting (anyone with the public key could submit made-up totals; values are capped, which is fine for a hackathon).
 

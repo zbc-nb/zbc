@@ -320,9 +320,23 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.country) getShare().then((s) => s.on && shareUsage());
 });
 
+// Uploads: about a minute after new AI use (one upload for everything in that
+// minute), plus every 6 hours as a backup.
 chrome.alarms.create("share", { periodInMinutes: 360 });
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "share") shareUsage();
+  if (alarm.name === "share" || alarm.name === "share-soon") shareUsage();
+});
+
+async function scheduleShareSoon() {
+  const share = await getShare();
+  if (!share.on || !PP.cloudConfigured()) return;
+  // Don't push an already-scheduled upload further back, so steady chatting
+  // still uploads every minute or so.
+  if (!(await chrome.alarms.get("share-soon"))) chrome.alarms.create("share-soon", { delayInMinutes: 1 });
+}
+
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.events) scheduleShareSoon();
 });
 
 // ---------- Messages from content.js, popup.js and import.js ----------
