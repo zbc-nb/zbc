@@ -16,6 +16,7 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 - **Which AI you use:** the split by prompts, CO₂ or electricity, with each AI's exact numbers, average energy per prompt, and whether that figure is **published** or **our estimate**.
 - **Suggestions:** lower-impact alternatives for the tasks you use AI for most (prompts are sorted into Math, Coding, Writing, Research, Brainstorm or Other behind the scenes).
 - **World map:** what your usage would emit on each country's power grid.
+- **Image generation:** detects generated images in AI replies (large images, not icons), including ones that appear after the text, on Load data, and in imported ChatGPT history. Each adds about 2.9 Wh; the popup shows image counts and a tip when images take a big share of your energy. Sites without a mapped layout (Perplexity, Copilot, DeepSeek, Grok, Mistral) can't detect images yet.
 - **AI icons:** each platform shows its real site icon from Chrome's own icon cache (the `favicon` permission, no network request). Sites you haven't visited yet show a colored letter badge until you do.
 - **Collapsible platforms list:** click **Your connected platforms** to collapse it to a row of the connected AIs' icons; Evergreen remembers your choice.
 - **Private:** everything stays in your browser unless you opt in to map sharing. Prompt text is never saved; only the category and lengths are.
@@ -102,6 +103,7 @@ g CO₂e    = energy_Wh ÷ 1000 × grid intensity (g CO₂e per kWh)
 | Grid carbon intensity | 400 g CO₂e/kWh | Approximate US average (EPA eGRID) |
 | Displayed range | 0.5× to 2× the estimate | Reflects uncertainty in all of the above |
 | Phone charge / mile driven | 12.4 g / 400 g CO₂ | EPA Greenhouse Gas Equivalencies Calculator |
+| Generated image | ≈ 2.9 Wh per image, added to the prompt's text estimate | Luccioni, Jernite & Strubell, *Power Hungry Processing: Watts Driving the Cost of AI Deployment?* (2023): image generation averaged ~2.9 kWh per 1,000 images. Varies a lot by model and image size |
 | Average AI use | ≈ 3.7 prompts/day per user | OpenAI / NBER, Chatterji et al., *How People Use ChatGPT* (working paper w34255, Sept 2025): ~18 billion messages a week from ~700 million weekly users (July 2025) |
 | Climate damage | ≈ $190 per tonne CO₂ | US EPA, social cost of carbon (2023 update, 2% discount rate) |
 

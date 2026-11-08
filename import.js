@@ -63,10 +63,11 @@ function pairUp(site, messages) {
   for (const m of messages) {
     if (m.role === "user") {
       if (!m.text.trim()) continue;
-      current = { site, promptText: m.text, responseChars: 0, timestamp: m.time, importKey: `${site}:${m.id}` };
+      current = { site, promptText: m.text, responseChars: 0, images: 0, timestamp: m.time, importKey: `${site}:${m.id}` };
       items.push(current);
     } else if (m.role === "assistant" && current) {
       current.responseChars += m.text.length;
+      current.images += m.images ?? 0;
     }
   }
   return items;
@@ -79,13 +80,17 @@ function parseChatGPT(conversations) {
   for (const conv of conversations) {
     const messages = Object.values(conv.mapping ?? {})
       .map((node) => node.message)
-      .filter((m) => m && ["user", "assistant"].includes(m.author?.role))
+      .filter((m) => m && ["user", "assistant", "tool"].includes(m.author?.role))
       .filter((m) => !m.metadata?.is_visually_hidden_from_conversation)
       .filter((m) => m.author.role !== "user" || ["text", "multimodal_text"].includes(m.content?.content_type))
+      // Generated images appear as "image_asset_pointer" parts, usually in a
+      // "tool" message (the image tool) or the assistant's reply. Tool
+      // messages count only for their images, not their text.
       .map((m) => ({
         id: m.id,
-        role: m.author.role,
-        text: textParts(m.content?.parts) || m.content?.text || "",
+        role: m.author.role === "user" ? "user" : "assistant",
+        text: m.author.role === "tool" ? "" : textParts(m.content?.parts) || m.content?.text || "",
+        images: m.author.role === "user" ? 0 : (m.content?.parts ?? []).filter((x) => x && typeof x === "object" && x.content_type === "image_asset_pointer").length,
         time: Math.round((m.create_time ?? conv.create_time ?? 0) * 1000),
       }))
       .sort((a, b) => a.time - b.time);

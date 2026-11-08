@@ -16,6 +16,7 @@ const ALTERNATIVES = {
   Writing: ["Purdue OWL", "your campus writing center", "a thesaurus", "your editor's built-in grammar check"],
   Research: ["a regular web search", "Wikipedia", "your library's databases"],
   Brainstorm: ["5 minutes of solo brainstorming first", "a mind map", "asking a classmate"],
+  Image: ["free stock photo sites (Unsplash, Pexels)", "sketching your idea first, then generating once", "editing an image you already have instead of regenerating"],
 };
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -213,6 +214,8 @@ function renderTotals(events, start) {
   $("m-co2-foot").textContent = events.length ? `Likely ${PP.fmtGrams(g * PP.UNCERTAINTY.low)}–${PP.fmtGrams(g * PP.UNCERTAINTY.high)}` : "Nothing recorded yet";
   $("m-prompts").textContent = events.length.toLocaleString();
   $("m-tokens").textContent = tokens.toLocaleString();
+  const images = sum(events, (e) => e.images ?? 0);
+  $("m-images").textContent = images ? ` · ${images.toLocaleString()} image${images === 1 ? "" : "s"}` : "";
   $("m-wh").textContent = wv;
   $("m-wh-unit").textContent = wu;
   $("m-water").textContent = lv;
@@ -384,6 +387,11 @@ function renderDamage(events, days) {
   );
 }
 
+const imagesText = (evs) => {
+  const n = sum(evs, (e) => e.images ?? 0);
+  return n ? ` · ${n.toLocaleString()} image${n === 1 ? "" : "s"}` : "";
+};
+
 // ---------- Which AI you use: a transparent breakdown ----------
 let siteMeasure = "prompts";
 let lastSiteEvents = [];
@@ -419,7 +427,7 @@ function renderSites(events) {
       const whPerPrompt = sum(r.evs, (e) => e.wh) / r.evs.length;
       const detail = r.site === "other"
         ? `${r.evs.length.toLocaleString()} prompts across several smaller AIs`
-        : `${r.evs.length.toLocaleString()} prompt${r.evs.length === 1 ? "" : "s"} · ${PP.fmtWh(whPerPrompt)} each on average`;
+        : `${r.evs.length.toLocaleString()} prompt${r.evs.length === 1 ? "" : "s"}${imagesText(r.evs)} · ${PP.fmtWh(whPerPrompt)} each on average`;
       return el("tr", {},
         el("td", {},
           el("div", { className: "site-name" },
@@ -453,7 +461,23 @@ for (const radio of document.querySelectorAll('input[name="site-measure"]')) {
 function renderSuggestions(events) {
   const tips = [];
   const total = events.length;
+
+  // Images: judged by their share of energy, since a few images can outweigh
+  // many text prompts.
+  const images = sum(events, (e) => e.images ?? 0);
+  const imageWh = sum(events, (e) => e.imageWh ?? 0);
+  const allWh = sum(events, (e) => e.wh);
+  if (images > 0 && imageWh / (allWh || 1) >= 0.2) {
+    const textWhPerPrompt = (allWh - imageWh) / Math.max(1, total);
+    tips.push({
+      title: `Your ${images.toLocaleString()} generated image${images === 1 ? "" : "s"} used ${PP.fmtPct(imageWh / allWh)} of your AI energy ${periodPhrase}.`,
+      alts: `One image uses about as much as ${PP.fmtNum(PP.WH_PER_IMAGE / (textWhPerPrompt || 0.3))} of your text prompts. Try: ${ALTERNATIVES.Image.join(", ")}.`,
+      save: `Making half as many images would have saved ≈ ${PP.fmtGrams(sum(events, (e) => (e.imageWh ?? 0) * ((e.gco2e / e.wh) || 0)) / 2)} CO₂e ${periodPhrase}.`,
+    });
+  }
+
   for (const [category, evs] of Object.entries(groupBy(events, "category"))) {
+    if (category === "Image") continue; // covered by the image tip above
     const alts = ALTERNATIVES[category];
     const share = evs.length / total;
     if (!alts || share < 0.3 || evs.length < 5) continue;

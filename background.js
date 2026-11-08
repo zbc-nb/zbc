@@ -7,18 +7,22 @@ importScripts("lib/constants.js", "lib/grid-data.js", "lib/config.js");
 const { SITES, REFERENCE_REPLY_TOKENS, CHARS_PER_TOKEN } = PP;
 const GRID_G_PER_KWH = PP.DEFAULT_GRID_G_PER_KWH;
 
-function estimateEmissions(site, promptChars, responseChars) {
+function estimateEmissions(site, promptChars, responseChars, images = 0) {
   const promptTokens = Math.ceil(promptChars / CHARS_PER_TOKEN);
   const responseTokens = Math.ceil(responseChars / CHARS_PER_TOKEN);
   const baseWh = SITES[site]?.baseWh ?? 0.3;
   // Longer replies take more computation. Unknown length (0) = typical.
+  // An image-only reply has no text to measure, so its text part counts as short.
   const lengthFactor =
     responseTokens > 0
       ? Math.min(Math.max(responseTokens / REFERENCE_REPLY_TOKENS, 0.25), 10)
-      : 1;
-  const wh = baseWh * lengthFactor;
+      : images > 0 ? 0.25 : 1;
+  const textWh = baseWh * lengthFactor;
+  // Each generated image adds its own (much larger) energy.
+  const imageWh = Math.max(0, Math.min(images, 20)) * PP.WH_PER_IMAGE;
+  const wh = textWh + imageWh;
   const gco2e = (wh / 1000) * GRID_G_PER_KWH;
-  return { promptTokens, responseTokens, wh, gco2e };
+  return { promptTokens, responseTokens, images: Math.max(0, Math.min(images, 20)), imageWh, wh, gco2e };
 }
 
 // ---------- Task categories (simple keyword rules, no AI needed) ----------
@@ -70,16 +74,35 @@ function updateEvents(change) {
   return result;
 }
 
-function buildEvent({ site, promptText = "", responseChars = 0, timestamp, importKey, source = "live" }) {
+function buildEvent({ site, promptText = "", responseChars = 0, images = 0, timestamp, importKey, source = "live" }) {
+  const n = Number.isFinite(images) ? Math.round(images) : 0;
   return {
     id: crypto.randomUUID(),
     ...(importKey ? { importKey } : {}),
     source, // "live", "manual", "import" or "scan"
     site,
-    category: categorize(promptText),
-    ...estimateEmissions(site, promptText.length, responseChars),
+    category: n > 0 ? "Image" : categorize(promptText),
+    ...estimateEmissions(site, promptText.length, responseChars, n),
     timestamp: timestamp ?? Date.now(),
   };
+}
+
+// An image appeared in a reply after the prompt was saved (images take a
+// while to generate): update that prompt's image count and energy.
+function updateImages({ importKey, images }) {
+  if (!importKey || !Number.isFinite(images)) return Promise.resolve({ ok: false });
+  return updateEvents((events) => {
+    const e = events.find((x) => x.importKey === importKey);
+    if (!e || images <= (e.images ?? 0)) return { next: events, value: { ok: true, changed: false } };
+    const n = Math.min(Math.round(images), 20);
+    const imageWh = n * PP.WH_PER_IMAGE;
+    e.wh = e.wh - (e.imageWh ?? 0) + imageWh;
+    e.gco2e = (e.wh / 1000) * GRID_G_PER_KWH;
+    e.images = n;
+    e.imageWh = imageWh;
+    e.category = "Image";
+    return { next: events, value: { ok: true, changed: true } };
+  });
 }
 
 // Adds events, skipping any whose importKey is already saved, so the same
@@ -308,6 +331,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     switch (msg.type) {
       case "ai-event":
         return addUniqueEvents([msg], { source: "live" });
+      case "ai-images":
+        return updateImages(msg);
       case "manual-log":
         return addUniqueEvents([msg], { source: "manual" });
       case "import-events":

@@ -68,7 +68,7 @@
     <article class="metric">
       <div class="metric-label">Prompts · tokens</div>
       <div class="metric-number"><span id="m-prompts">0</span><small>prompts</small></div>
-      <div class="metric-foot"><span id="m-tokens">0</span> tokens processed</div>
+      <div class="metric-foot"><span id="m-tokens">0</span> tokens<span id="m-images"></span></div>
     </article>
     <article class="metric">
       <div class="metric-label">Energy used</div>
@@ -221,6 +221,7 @@
     <button class="close" data-close aria-label="Close">×</button>
     <h2 id="about-title">An estimate, with perspective.</h2>
     <p>Each prompt's energy comes from the AI's energy per typical prompt (0.24–0.34 Wh where published, 0.3 Wh otherwise), scaled by reply length. Tokens ≈ characters ÷ 4.</p>
+    <p>Each generated image adds about 2.9 Wh, the average for image generation measured by Luccioni et al., <cite>Power Hungry Processing</cite> (2023). Real values vary a lot by model and image size.</p>
     <p>Emissions use the power grid of <strong id="about-grid">your country</strong> (change it on the World map). The likely range for this period is <strong id="about-range">—</strong>.</p>
     <h3>Water is a scenario estimate</h3>
     <p>Cooling water = energy (kWh) × the cooling-water rate below. The default 1.8 L/kWh is illustrative, not a provider measurement, and excludes water used to generate electricity, train models or make hardware.</p>

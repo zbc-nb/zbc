@@ -141,15 +141,53 @@
     }
   }
 
+  // ---------- Generated images ----------
+  // A generated image is a large picture inside the AI's reply (icons,
+  // avatars and buttons are small). Images can take a minute or more to
+  // appear, so each finished reply is watched for a while longer and the
+  // prompt is updated if an image shows up.
+  const IMAGE_MIN_PX = 120;
+  const IMAGE_WATCH_MS = 180000;
+  const imageWatch = []; // { replyEl, importKey, images, until }
+
+  function countImages(root) {
+    if (!root?.isConnected) return 0;
+    return [...root.querySelectorAll("img, canvas")].filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width >= IMAGE_MIN_PX && r.height >= IMAGE_MIN_PX;
+    }).length;
+  }
+
+  function watchImages() {
+    const now = Date.now();
+    for (let i = imageWatch.length - 1; i >= 0; i--) {
+      const w = imageWatch[i];
+      const n = countImages(w.replyEl);
+      if (n > w.images) {
+        w.images = n;
+        try {
+          chrome.runtime.sendMessage({ type: "ai-images", site: SITE, importKey: w.importKey, images: n });
+        } catch {
+          /* extension reloaded */
+        }
+      }
+      if (now > w.until || !w.replyEl.isConnected) imageWatch.splice(i, 1);
+    }
+  }
+
   function finishPending() {
     if (!pending) return;
+    const importKey = pending.userEl.isConnected ? keyFor(pending.userEl) : undefined;
+    const images = countImages(pending.replyEl);
     send({
       site: SITE,
       promptText: pending.promptText,
       responseChars: Math.max(pending.lastLen, 0),
+      images,
       // Made when the reply finishes, after a new chat gets its final URL.
-      importKey: pending.userEl.isConnected ? keyFor(pending.userEl) : undefined,
+      importKey,
     });
+    if (importKey && pending.replyEl) imageWatch.push({ replyEl: pending.replyEl, importKey, images, until: Date.now() + IMAGE_WATCH_MS });
     pending = null;
   }
 
@@ -165,10 +203,11 @@
         if (pending && el === pending.userEl) continue; // still being answered
         const text = textOf(el);
         if (!text) continue;
-        current = { site: SITE, promptText: text, responseChars: 0, timestamp: Date.now(), importKey: keyFor(el), gotReply: false };
+        current = { site: SITE, promptText: text, responseChars: 0, images: 0, timestamp: Date.now(), importKey: keyFor(el), gotReply: false };
         items.push(current);
       } else if (current && !current.gotReply) {
         current.responseChars = textOf(el).length; // first reply after the prompt
+        current.images = countImages(el);
         current.gotReply = true;
       }
     }
@@ -230,11 +269,16 @@
       pending.userEl.compareDocumentPosition(lastReply) & Node.DOCUMENT_POSITION_FOLLOWING;
 
     if (isAfterPrompt) {
+      pending.replyEl = lastReply;
       const len = textOf(lastReply).length;
-      if (len !== pending.lastLen) {
+      const imgs = countImages(lastReply);
+      // A reply counts as finished once its text and images stop changing;
+      // an image-only reply (no text) finishes too.
+      if (len !== pending.lastLen || imgs !== pending.lastImgs) {
         pending.lastLen = len;
+        pending.lastImgs = imgs;
         pending.stableSince = now;
-      } else if (len > 0 && now - pending.stableSince >= STABLE_MS) {
+      } else if ((len > 0 || imgs > 0) && now - pending.stableSince >= STABLE_MS) {
         finishPending();
         return;
       }
@@ -251,6 +295,7 @@
   setInterval(() => {
     scanForNewPrompts();
     checkReply();
+    watchImages();
   }, 1000);
 
   // Don't lose a prompt if the tab is closed mid-reply.
