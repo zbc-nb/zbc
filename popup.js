@@ -718,6 +718,11 @@ async function renderShare(updateStatus = true) {
   $("share-country").value = id ?? "";
   $("share-switch").setAttribute("aria-checked", String(!!share.on));
   $("share-delete").hidden = !share.installId;
+  // Header label: detailed data always stays here; totals are shared only when opted in.
+  $("storage-text").textContent = share.on ? "Stored locally · sharing totals" : "Stored locally";
+  $("storage-label").title = share.on
+    ? "Your detailed usage stays in this browser. Anonymous daily totals are shared with the world map."
+    : "Your detailed usage stays in this browser. Nothing is shared.";
   if (!PP.cloudConfigured()) {
     $("share-switch").disabled = true;
     $("share-status").textContent = "Sharing isn't set up in this version yet (no database is configured).";
