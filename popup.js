@@ -52,27 +52,146 @@ function foldSites(events) {
   return events.map((e) => (keep.has(e.site) ? e : { ...e, site: "other" }));
 }
 
-// ---------- Date range ----------
-const RANGES = {
-  today: "today",
-  week: "this week",
-  month: "this month",
-  all: "in total",
-};
+// ---------- Period (like Screen Time: Day / Week / Month, with ‹ › to go back) ----------
 const currentRange = () => document.querySelector('input[name="range"]:checked')?.value ?? "week";
+let anchor = Date.now(); // any moment inside the period being viewed
 
 function dayStart(t) {
   const d = new Date(t);
   d.setHours(0, 0, 0, 0);
   return +d;
 }
+const addDays = (t, n) => { const d = new Date(t); d.setDate(d.getDate() + n); return +d; };
+const firstEventTime = () => (state.events.length ? Math.min(...state.events.map((e) => e.timestamp)) : Date.now());
 
-function rangeStart(range, events) {
-  const today = new Date(dayStart(Date.now()));
-  if (range === "today") return +today;
-  if (range === "week") return +new Date(today.getFullYear(), today.getMonth(), today.getDate() - ((today.getDay() + 6) % 7));
-  if (range === "month") return +new Date(today.getFullYear(), today.getMonth(), 1);
-  return events.length ? dayStart(Math.min(...events.map((e) => e.timestamp))) : +today;
+// [start, end) of the period containing `at`. Weeks start on Sunday, as in Screen Time.
+function periodBounds(mode, at) {
+  const d = new Date(dayStart(at));
+  if (mode === "day") return { start: +d, end: addDays(+d, 1) };
+  if (mode === "week") { const s = addDays(+d, -d.getDay()); return { start: s, end: addDays(s, 7) }; }
+  if (mode === "month") return { start: +new Date(d.getFullYear(), d.getMonth(), 1), end: +new Date(d.getFullYear(), d.getMonth() + 1, 1) };
+  return { start: dayStart(firstEventTime()), end: addDays(dayStart(Date.now()), 1) };
+}
+
+function shiftAnchor(mode, dir) {
+  const d = new Date(anchor);
+  if (mode === "day") d.setDate(d.getDate() + dir);
+  else if (mode === "week") d.setDate(d.getDate() + 7 * dir);
+  else if (mode === "month") d.setMonth(d.getMonth() + dir, 1);
+  return +d;
+}
+
+// Labels like "Today", "Last week", "Thursday, November 5", "October 2026".
+function periodText(mode, { start, end }) {
+  const now = Date.now();
+  const isCurrent = now >= start && now < end;
+  const sameYear = new Date(start).getFullYear() === new Date().getFullYear();
+  const fmt = (t, opts) => new Date(t).toLocaleDateString(undefined, { ...opts, ...(sameYear ? {} : { year: "numeric" }) });
+  const span = `${fmt(start, { month: "short", day: "numeric" })} – ${fmt(end - 1, { month: "short", day: "numeric" })}`;
+  if (mode === "day") {
+    const yesterday = start === addDays(dayStart(now), -1);
+    return {
+      title: isCurrent ? "Today" : yesterday ? "Yesterday" : fmt(start, { weekday: "long", month: "long", day: "numeric" }),
+      sub: fmt(start, { weekday: "long", month: "long", day: "numeric", year: "numeric" }),
+      phrase: isCurrent ? "today" : "that day",
+    };
+  }
+  if (mode === "week") {
+    const last = end === periodBounds("week", now).start;
+    return { title: isCurrent ? "This week" : last ? "Last week" : span, sub: span, phrase: isCurrent ? "this week" : "that week" };
+  }
+  if (mode === "month") {
+    const name = new Date(start).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    return { title: isCurrent ? "This month" : name, sub: name, phrase: isCurrent ? "this month" : "that month" };
+  }
+  return { title: "All time", sub: `Since ${fmt(start, { month: "short", day: "numeric", year: "numeric" })}`, phrase: "in total" };
+}
+let periodPhrase = "this week";
+
+// ---------- Usage chart (bars colored by AI, like Screen Time's categories) ----------
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const p = 10 ** Math.floor(Math.log10(v));
+  return [1, 2, 2.5, 5, 10].map((m) => m * p).find((m) => m >= v);
+}
+
+function renderChart(mode, bounds, events) {
+  const now = Date.now();
+  const buckets = [];
+  if (mode === "day") {
+    for (let h = 0; h < 24; h++) {
+      const s = bounds.start + h * 3600e3;
+      buckets.push({ start: s, end: s + 3600e3, label: h % 6 === 0 ? new Date(s).toLocaleTimeString(undefined, { hour: "numeric" }) : "", tip: new Date(s).toLocaleTimeString(undefined, { hour: "numeric" }) });
+    }
+  } else if (mode === "all") {
+    let m = new Date(bounds.start);
+    m = new Date(m.getFullYear(), m.getMonth(), 1);
+    const months = [];
+    while (+m < bounds.end) { months.push(+m); m = new Date(m.getFullYear(), m.getMonth() + 1, 1); }
+    for (const s of months.slice(-12)) {
+      const e = +new Date(new Date(s).getFullYear(), new Date(s).getMonth() + 1, 1);
+      buckets.push({ start: s, end: e, label: new Date(s).toLocaleDateString(undefined, { month: "narrow" }), tip: new Date(s).toLocaleDateString(undefined, { month: "long", year: "numeric" }), drill: "month" });
+    }
+  } else {
+    for (let s = bounds.start; s < bounds.end; s = addDays(s, 1)) {
+      const d = new Date(s);
+      const label = mode === "week" ? d.toLocaleDateString(undefined, { weekday: "narrow" }) : d.getDate() === 1 || d.getDate() % 7 === 1 ? String(d.getDate()) : "";
+      buckets.push({ start: s, end: addDays(s, 1), label, tip: d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }), drill: "day" });
+    }
+  }
+
+  const order = Object.keys(PP.SITES);
+  for (const b of buckets) {
+    const evs = events.filter((e) => e.timestamp >= b.start && e.timestamp < b.end);
+    b.prompts = evs.length;
+    b.total = sum(evs, (e) => e.gco2e);
+    b.bySite = order.map((site) => [site, sum(evs.filter((e) => e.site === site), (e) => e.gco2e)]).filter(([, g]) => g > 0);
+    b.future = b.start > now;
+  }
+
+  // Daily average (week/month): over the days that have already happened.
+  const past = buckets.filter((b) => !b.future);
+  const avg = mode === "week" || mode === "month" ? sum(past, (b) => b.total) / Math.max(1, past.length) : null;
+  const top = niceMax(Math.max(...buckets.map((b) => b.total), avg ?? 0) * 1.05);
+
+  $("usage-chart").replaceChildren(
+    ...buckets.map((b) => {
+      const stack = el("span", { className: "stack", style: { height: `${(b.total / top) * 100}%` } },
+        // Shares as percentages: flex-grow values that add up to less than 1
+        // would only partly fill the bar.
+        ...b.bySite.map(([site, g]) => el("i", { style: { flexGrow: String((g / b.total) * 100), background: PP.siteColor(site) } }))
+      );
+      const tip = `${b.tip}: ${PP.fmtGrams(b.total)} CO₂e · ${b.prompts} prompt${b.prompts === 1 ? "" : "s"}`;
+      if (b.drill && !b.future) {
+        const btn = el("button", { className: "bar", title: `${tip}. Show ${b.drill}`, "aria-label": `${tip}. Show this ${b.drill}` }, stack);
+        btn.addEventListener("click", () => {
+          anchor = b.start;
+          document.querySelector(`input[name="range"][value="${b.drill}"]`).checked = true;
+          chrome.storage.local.set({ range: b.drill });
+          render();
+        });
+        return btn;
+      }
+      return el("span", { className: "bar" + (b.future ? " future" : ""), title: tip }, stack);
+    })
+  );
+  if (avg) {
+    $("usage-chart").append(el("span", { className: "avg-line", style: { bottom: `${(avg / top) * 100}%` }, title: `Daily average: ${PP.fmtGrams(avg)}` }, el("em", {}, "avg")));
+  }
+  $("usage-chart").classList.toggle("dense", buckets.length > 12);
+  $("usage-x").classList.toggle("dense", buckets.length > 12);
+  $("usage-y").replaceChildren(...[top, top / 2, 0].map((v) => el("span", {}, v ? PP.fmtGrams(v) : "0")));
+  $("usage-x").replaceChildren(...buckets.map((b) => el("span", {}, b.label)));
+
+  // Legend: the AIs with the most CO₂ in this period (like Screen Time's top categories).
+  const totals = order.map((site) => [site, sum(events.filter((e) => e.site === site), (e) => e.gco2e)]).filter(([, g]) => g > 0).sort((a, b) => b[1] - a[1]);
+  $("usage-legend").replaceChildren(
+    ...totals.slice(0, 3).map(([site, g]) =>
+      el("div", {}, el("span", { className: "legend-name", style: { color: PP.siteColor(site) } }, PP.SITES[site].name), el("strong", {}, PP.fmtGrams(g)))
+    ),
+    ...(totals.length > 3 ? [el("div", {}, el("span", { className: "legend-name" }, `+${totals.length - 3} more`), el("strong", {}, PP.fmtGrams(sum(totals.slice(3), ([, g]) => g))))] : [])
+  );
+  if (!totals.length) $("usage-legend").append(el("p", { className: "note" }, "No AI use recorded in this period."));
 }
 
 // ---------- Unit helpers (number and unit shown separately) ----------
@@ -100,9 +219,8 @@ function renderTotals(events, start) {
   $("m-water-unit").textContent = lu;
   $("water-rate-label").textContent = state.waterRate;
   $("about-range").textContent = `${PP.fmtGrams(g * PP.UNCERTAINTY.low)}–${PP.fmtGrams(g * PP.UNCERTAINTY.high)} CO₂e`;
-
-  const fmtDate = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  $("date-range").textContent = `${fmtDate(start)} — ${fmtDate(Date.now())}, ${new Date().getFullYear()} · ${events.length.toLocaleString()} prompt${events.length === 1 ? "" : "s"}`;
+  $("usage-total").textContent = PP.fmtGrams(g);
+  $("usage-total-sub").textContent = `CO₂e · ${events.length.toLocaleString()} prompt${events.length === 1 ? "" : "s"}`;
 }
 
 // ---------- Everyday comparison ----------
@@ -190,8 +308,7 @@ const PLANT_TEXT = {
 
 // Your prompts per day, compared with the average ChatGPT user's (from
 // OpenAI's research; see PP.AVERAGE_USER in lib/constants.js).
-async function renderBenchmark(events, start) {
-  const days = Math.max(1, Math.round((dayStart(Date.now()) - start) / DAY) + 1);
+async function renderBenchmark(events, days) {
   const avg = PP.AVERAGE_USER.promptsPerDay;
   const daily = events.length / days;
   const ratio = daily / avg;
@@ -254,7 +371,7 @@ function renderDamage(events, days) {
 
   const item = (title, detail) => el("li", {}, el("strong", {}, title), el("span", { className: "muted" }, detail));
   list.replaceChildren(
-    item(`Climate: ≈ ${PP.fmtGrams(g)} CO₂e ${RANGES[currentRange()]}.`,
+    item(`Climate: ≈ ${PP.fmtGrams(g)} CO₂e ${periodPhrase}.`,
       `At this pace, ≈ ${PP.fmtGrams(yearG)} a year, like ${driving.describe(yearG)}. That causes about ${usd(damageUsd)} of future climate damage each year.`),
     item(`Compared with others: ${vsAvg} average user's CO₂.`,
       `An average user (${PP.fmtNum(PP.AVERAGE_USER.promptsPerDay)} prompts a day) adds ≈ ${PP.fmtGrams(avgYearG)} a year at the same energy per prompt.`),
@@ -288,7 +405,7 @@ function renderSites(events) {
     ...rows.map((r) =>
       el("span", {
         title: `${SITE_INFO[r.site].name}: ${PP.fmtPct(r.value / total)}`,
-        style: { flexGrow: String(r.value), flexBasis: "0", minWidth: "4px", background: SITE_INFO[r.site].color },
+        style: { flexGrow: String((r.value / total) * 100), flexBasis: "0", minWidth: "4px", background: SITE_INFO[r.site].color },
       })
     )
   );
@@ -332,36 +449,6 @@ for (const radio of document.querySelectorAll('input[name="site-measure"]')) {
   });
 }
 
-// ---------- What you use it for ----------
-function renderCategories(events) {
-  const byCat = Object.entries(groupBy(events, "category")).sort((a, b) => b[1].length - a[1].length);
-  const max = byCat[0]?.[1].length ?? 1;
-  const box = $("category-bars");
-  box.replaceChildren();
-  $("category-note").hidden = (groupBy(events, "category").Other?.length ?? 0) / (events.length || 1) < 0.5;
-  if (!byCat.length) {
-    box.append(el("p", { className: "note" }, "No usage in this period yet."));
-    return;
-  }
-  for (const [category, evs] of byCat) {
-    const bySite = groupBy(evs, "site");
-    const track = el("div", { className: "bar-track", style: { width: `${(evs.length / max) * 100}%` } });
-    for (const [site, info] of Object.entries(SITE_INFO)) {
-      const n = bySite[site]?.length ?? 0;
-      if (n) track.append(el("span", { title: `${info.name}: ${n}`, style: { width: `${(n / evs.length) * 100}%`, background: info.color } }));
-    }
-    box.append(
-      el("div", { className: "bar-row" },
-        el("div", { className: "bar-label" },
-          el("span", {}, category),
-          el("span", {}, `${evs.length.toLocaleString()} · ${PP.fmtPct(evs.length / events.length)} · ${PP.fmtGrams(sum(evs, (e) => e.gco2e))}`)
-        ),
-        track
-      )
-    );
-  }
-}
-
 // ---------- Suggestions ----------
 function renderSuggestions(events) {
   const tips = [];
@@ -374,7 +461,7 @@ function renderSuggestions(events) {
     tips.push({
       title: `${PP.fmtPct(share)} of your prompts are ${category.toLowerCase()} (${PP.fmtPct(topSite[1].length / evs.length)} of those on ${SITE_INFO[topSite[0]].name}).`,
       alts: `Try: ${alts.join(", ")}.`,
-      save: `Doing half of these another way would have saved ≈ ${PP.fmtGrams(sum(evs, (e) => e.gco2e) / 2)} CO₂e ${RANGES[currentRange()]}.`,
+      save: `Doing half of these another way would have saved ≈ ${PP.fmtGrams(sum(evs, (e) => e.gco2e) / 2)} CO₂e ${periodPhrase}.`,
     });
   }
   if (total >= 10) {
@@ -490,17 +577,28 @@ async function render() {
   for (const e of events) e.gco2e = (e.wh / 1000) * grid;
   state.events = events;
 
-  const range = currentRange();
-  const start = rangeStart(range, events);
-  const current = events.filter((e) => e.timestamp >= start);
+  const mode = currentRange();
+  const bounds = periodBounds(mode, anchor);
+  const current = events.filter((e) => e.timestamp >= bounds.start && e.timestamp < bounds.end);
   state.current = current;
   const shown = foldSites(current);
 
-  renderTotals(current, start);
+  // Header: label, ‹ › availability. Can't go past today, or before your first prompt.
+  const text = periodText(mode, bounds);
+  periodPhrase = text.phrase;
+  $("period-label").textContent = text.title;
+  $("period-sub").textContent = text.sub;
+  $("prev-period").disabled = mode === "all" || bounds.start <= dayStart(firstEventTime());
+  $("next-period").disabled = mode === "all" || bounds.end > Date.now();
+
+  // Days in the period that have happened (for daily averages).
+  const days = Math.max(1, Math.round((Math.min(bounds.end, addDays(dayStart(Date.now()), 1)) - bounds.start) / DAY));
+
+  renderChart(mode, bounds, current);
+  renderTotals(current, bounds.start);
   renderEquivalent();
-  await renderBenchmark(current, start);
+  await renderBenchmark(current, days);
   renderSites(shown);
-  renderCategories(shown);
   renderSuggestions(shown);
   renderPlatforms(current);
 }
@@ -508,10 +606,13 @@ async function render() {
 // ---------- Controls ----------
 for (const r of document.querySelectorAll('input[name="range"]')) {
   r.addEventListener("change", () => {
+    anchor = Date.now(); // switching view jumps back to the current day/week/month
     chrome.storage.local.set({ range: r.value });
     render();
   });
 }
+$("prev-period").addEventListener("click", () => { anchor = shiftAnchor(currentRange(), -1); render(); });
+$("next-period").addEventListener("click", () => { anchor = Math.min(shiftAnchor(currentRange(), 1), Date.now()); render(); });
 
 
 for (const box of document.querySelectorAll("[data-habit]")) {
@@ -590,7 +691,8 @@ chrome.permissions.onRemoved.addListener(async () => { await loadGranted(); rend
   const { range, equivChoice, waterRate, platformsOpen: open } = await chrome.storage.local.get(["range", "equivChoice", "waterRate", "platformsOpen"]);
   if (typeof open === "boolean") platformsOpen = open;
   applyPlatformsOpen();
-  if (range) for (const r of document.querySelectorAll('input[name="range"]')) r.checked = r.value === range;
+  const saved = range === "today" ? "day" : range; // older versions saved "today"
+  if (saved) for (const r of document.querySelectorAll('input[name="range"]')) r.checked = r.value === saved;
   if (equivChoice && PP.EQUIVALENTS.some((eq) => eq.id === equivChoice)) $("equiv-select").value = equivChoice;
   if (Number.isFinite(waterRate)) $("water-rate").value = waterRate;
   await loadGranted();

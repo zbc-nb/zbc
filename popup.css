@@ -237,3 +237,57 @@ dialog input { width: 110px; }
 #plat-body { margin-top: 2px; }
 .plat-mini { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: 11px; color: var(--muted); }
 .site-table .site-badge { border-radius: 4px; }
+
+/* ---------- Screen Time–style usage chart ---------- */
+.usage { margin: 10px 0 12px; }
+.period-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.period-nav h2 { font-family: var(--display); font-size: 15px; color: var(--heading); margin: 0; text-align: center; flex: 1; }
+.nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--primary);
+  color: var(--on-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+.nav-btn:disabled { background: var(--panel-soft); color: var(--faint); opacity: 1; cursor: default; }
+.usage-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+.usage-sub { margin: 0; font-size: 11px; color: var(--muted); }
+.usage-total { margin: 2px 0 10px; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.usage-total strong { font-family: var(--display); font-size: 30px; letter-spacing: -1px; color: var(--heading); }
+.usage-total span { font-size: 11px; color: var(--muted); }
+.chart-wrap { display: flex; gap: 6px; }
+.chart {
+  position: relative;
+  flex: 1;
+  height: 110px;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  border-bottom: 1px solid var(--border);
+  background-image: linear-gradient(var(--border) 1px, transparent 1px);
+  background-size: 100% 50%;
+}
+.chart.dense { gap: 2px; }
+.chart .bar { flex: 1; height: 100%; display: flex; align-items: flex-end; padding: 0; border: 0; background: none; min-width: 0; }
+.chart button.bar { cursor: pointer; border-radius: 4px; }
+.chart button.bar:hover .stack { filter: brightness(1.12); }
+.chart .stack { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 3px 3px 0 0; overflow: hidden; min-height: 0; }
+.chart .stack i { display: block; min-height: 1px; }
+.chart .bar.future .stack { opacity: 0.3; }
+.avg-line { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--faint); pointer-events: none; }
+.avg-line em { position: absolute; right: -34px; top: -8px; font-style: normal; font-size: 9px; color: var(--muted); }
+.y-axis { width: 34px; display: flex; flex-direction: column; justify-content: space-between; font-size: 9px; color: var(--muted); padding-left: 2px; height: 110px; margin-top: -5px; }
+.x-axis { display: flex; gap: 5px; margin-right: 40px; margin-top: 4px; }
+.chart.dense + .y-axis + .x-axis, .x-axis.dense { gap: 2px; }
+.x-axis span { flex: 1; min-width: 0; text-align: center; font-size: 10px; color: var(--muted); white-space: nowrap; overflow: visible; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.chart-legend div { display: flex; flex-direction: column; }
+.legend-name { font-size: 12px; font-weight: 600; }
+.chart-legend strong { font-family: var(--display); font-size: 14px; color: var(--heading); }
+.avg-line em { right: auto; left: 0; top: -14px; background: var(--panel); padding: 0 4px 0 0; }

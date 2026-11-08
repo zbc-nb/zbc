@@ -9,11 +9,12 @@ Built for the Binghamton hackathon **Environment track**. See [PLAN.md](PLAN.md)
 - **Usage tracking:** counts the prompts you send on the platforms you've connected.
 - **Load data:** re-reads your open AI tabs (connected platforms only) and adds any prompts that weren't counted yet. Never double-counts.
 - **Import past history:** reads the chat exports from ChatGPT, Claude and Google Takeout (Gemini) to show your footprint from before you installed it.
-- **Totals:** estimated emissions (with a likely range), prompts and tokens, electricity, and a cooling-water scenario, for Today, This week, This month or All time.
+- **Screen Time–style history:** Day / Week / Month / All time, with ‹ › to step back through past days, weeks and months. A bar chart colored by AI shows CO₂ per hour (day), per day (week and month, with a dashed daily average) or per month; tap a bar to open that day. Your top AIs for the period are listed underneath.
+- **Totals:** estimated emissions (with a likely range), prompts and tokens, electricity, and a cooling-water scenario for the selected period.
 - **Everyday comparisons:** driving, LED bulb, phone charges, streaming, water bottles, trees and more.
 - **How does your usage compare?** Your prompts per day against the average ChatGPT user (about 3.7 a day, from OpenAI's research), with **a plant** that thrives well below average, goes pale above it and wilts past double. **What does this mean for the environment?** turns your use into yearly CO₂, climate-damage cost, cooling water and electricity. **Habits that help** is a checklist under it.
 - **Which AI you use:** the split by prompts, CO₂ or electricity, with each AI's exact numbers, average energy per prompt, and whether that figure is **published** or **our estimate**.
-- **What you use it for:** task categories (Math, Coding, Writing, Research, Brainstorm, Other) with percentages, plus **Suggestions** for lower-impact alternatives.
+- **Suggestions:** lower-impact alternatives for the tasks you use AI for most (prompts are sorted into Math, Coding, Writing, Research, Brainstorm or Other behind the scenes).
 - **World map:** what your usage would emit on each country's power grid.
 - **AI icons:** each platform shows its real site icon from Chrome's own icon cache (the `favicon` permission, no network request). Sites you haven't visited yet show a colored letter badge until you do.
 - **Collapsible platforms list:** click **Your connected platforms** to collapse it to a row of the connected AIs' icons; PromptPrint remembers your choice.

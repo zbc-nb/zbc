@@ -28,13 +28,35 @@
     <button id="connect-btn" class="btn">Connect platforms</button>
   </section>
 
-  <div class="tabs" role="radiogroup" aria-label="Date range">
-    <label><input type="radio" name="range" value="today"><span>Today</span></label>
-    <label><input type="radio" name="range" value="week" checked><span>This week</span></label>
-    <label><input type="radio" name="range" value="month"><span>This month</span></label>
+  <!-- Screen Time–style period picker: tabs, ‹ › to step back in time, and a chart by AI -->
+  <div class="tabs" role="radiogroup" aria-label="Show usage by">
+    <label><input type="radio" name="range" value="day"><span>Day</span></label>
+    <label><input type="radio" name="range" value="week" checked><span>Week</span></label>
+    <label><input type="radio" name="range" value="month"><span>Month</span></label>
     <label><input type="radio" name="range" value="all"><span>All time</span></label>
   </div>
-  <p class="date-range" id="date-range"></p>
+
+  <section class="usage" aria-labelledby="period-label">
+    <div class="period-nav">
+      <button id="prev-period" class="nav-btn" aria-label="Previous period">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2 id="period-label" aria-live="polite">This week</h2>
+      <button id="next-period" class="nav-btn" aria-label="Next period">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="usage-card">
+      <p class="usage-sub" id="period-sub"></p>
+      <p class="usage-total"><strong id="usage-total">0 g</strong> <span id="usage-total-sub">CO₂e</span></p>
+      <div class="chart-wrap">
+        <div class="chart" id="usage-chart" role="group" aria-label="CO₂ by period, colored by AI"></div>
+        <div class="y-axis" id="usage-y" aria-hidden="true"></div>
+      </div>
+      <div class="x-axis" id="usage-x" aria-hidden="true"></div>
+      <div class="chart-legend" id="usage-legend"></div>
+    </div>
+  </section>
 
   <section class="metrics" aria-label="Totals for this period">
     <article class="metric primary">
@@ -131,12 +153,6 @@
       <p>Each prompt's electricity = the AI's energy per typical prompt × how long its reply was (longer replies use more). CO₂ = electricity × how much CO₂ your country's power grid emits per kWh.</p>
       <p>Only Google (Gemini) and OpenAI (ChatGPT) publish per-prompt energy figures. Every other AI uses our estimate of 0.3 Wh per prompt, marked "estimate". All numbers are approximate: the true value is likely between half and double.</p>
     </details>
-  </section>
-
-  <section class="panel" aria-labelledby="task-title">
-    <h2 id="task-title">What you use it for</h2>
-    <div id="category-bars"></div>
-    <p id="category-note" class="note" hidden>"Other" means the prompt didn't match any task keywords (like "solve" for Math or "python" for Coding), so its task is unknown.</p>
   </section>
 
   <section class="panel" aria-labelledby="tips-title">
