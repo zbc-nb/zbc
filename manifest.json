@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Evergreen – AI Carbon Tracker",
   "short_name": "Evergreen",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Tracks your AI chatbot usage on the platforms you choose, estimates its electricity, carbon and cooling water, and suggests lower-impact alternatives.",
   "permissions": [
     "storage",
