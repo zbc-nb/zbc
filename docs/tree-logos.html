@@ -1,0 +1,47 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&family=Manrope:wght@800&display=swap">
+<style>
+body{margin:0;padding:32px;background:#f7f9f5;font-family:"DM Sans",sans-serif;color:#293c33;width:1180px}
+h1{font-family:Manrope;font-size:30px;letter-spacing:-1px;color:#234b34;margin:0 0 4px}
+.sub{margin:0 0 24px;color:#5f6b5b}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{background:#fff;border:1px solid #e1e7dc;border-radius:16px;padding:20px}
+.row{display:flex;align-items:center;gap:18px}
+.big{width:120px;height:120px}
+.sizes{display:flex;align-items:flex-end;gap:12px;margin-left:auto}
+.sizes svg:nth-child(1){width:16px;height:16px}.sizes svg:nth-child(2){width:32px;height:32px}.sizes svg:nth-child(3){width:48px;height:48px}
+.bars{display:flex;gap:8px;margin-top:10px}
+.bar{border-radius:8px;padding:6px 8px;display:flex;gap:8px;align-items:center;font-size:11px}
+.bar svg{width:16px;height:16px}
+.dark{background:#202124;color:#bbb}.light{background:#dee1e6;color:#555}
+.word{display:flex;align-items:center;gap:8px;margin-top:12px;font-family:Manrope;font-weight:800;font-size:20px;letter-spacing:-1px;color:#234b34}
+.word svg{width:28px;height:28px}.word i{color:#89ad63;font-style:normal}
+h2{font-family:Manrope;font-size:18px;margin:12px 0 4px;color:#234b34}
+p{margin:0;font-size:13px;color:#5f6b5b;line-height:1.45}
+.tag{display:inline-block;font-size:11px;font-weight:600;background:#e7efdc;border-radius:999px;padding:2px 8px;margin-top:8px}
+</style></head><body>
+<h1>Evergreen tree logos</h1>
+<p class="sub">Each shown large, at 16 / 32 / 48 px, on dark and light toolbars, and next to the wordmark.</p>
+<div class="grid" id="grid"></div>
+<script>
+const G='#264e36', S='#89ad63', L='#eff6df', D='#173826', M='#3f7d4f', A='#f2c94c';
+const logos = [
+ {name:'A · Classic pine', why:'Three soft tiers and a trunk on a deep-green tile. The most recognizable at 16px and the safest choice.', tag:'Recommended',
+  svg:`<rect width="64" height="64" rx="15" fill="${G}"/><path d="M32 8 L44 23 H38 L48 36 H40 L51 49 H13 L24 36 H16 L26 23 H20 Z" fill="${L}" stroke="${L}" stroke-width="2" stroke-linejoin="round"/><rect x="28.5" y="49" width="7" height="8" rx="1.5" fill="${S}"/>`},
+ {name:'B · Faceted pine', why:'A geometric pine split into light and dark halves, like folded paper. Modern and techy, which nods to AI.',
+  svg:`<rect width="64" height="64" rx="15" fill="${L}"/><path d="M32 7 L20 24 H26 L15 39 H22 L11 53 H32 Z" fill="${M}"/><path d="M32 7 L44 24 H38 L49 39 H42 L53 53 H32 Z" fill="${G}"/><rect x="29" y="53" width="6" height="6" fill="${D}"/>`},
+ {name:'C · Line-art pine', why:'Thin outline in a circle, the same hand-drawn style as the leaf on the Estimated emissions card. Elegant, but thinner lines fade a bit at 16px.',
+  svg:`<circle cx="32" cy="32" r="30" fill="${G}"/><path d="M32 12 L42 25 H37 L45 36 H39 L47 47 H17 L25 36 H19 L27 25 H22 Z" fill="none" stroke="${L}" stroke-width="3" stroke-linejoin="round"/><path d="M32 47 V54 M32 22 V44 M32 30 L37 33 M32 38 L27 41" stroke="${S}" stroke-width="3" stroke-linecap="round"/>`},
+ {name:'D · Chevron pine', why:'A tree built from stacked arrows pointing up: growth and "going up a level". Bold and very clean when tiny.',
+  svg:`<rect width="64" height="64" rx="15" fill="${G}"/><path d="M18 26 L32 12 L46 26" fill="none" stroke="${L}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 38 L32 21 L49 38" fill="none" stroke="${L}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 50 L32 30 L52 50" fill="none" stroke="${S}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>`},
+ {name:'E · Pine forest', why:'Three pines, the middle one tallest: a community, which fits the shared world map. Busier, so less crisp at 16px.',
+  svg:`<rect width="64" height="64" rx="15" fill="${L}"/><path d="M17 22 L25 34 H21 L28 45 H6 L13 34 H9 Z" fill="${S}"/><path d="M47 22 L55 34 H51 L58 45 H36 L43 34 H39 Z" fill="${S}"/><path d="M32 9 L42 23 H37 L46 36 H40 L49 49 H15 L24 36 H18 L27 23 H22 Z" fill="${G}"/><rect x="29.5" y="49" width="5" height="7" fill="${G}"/><rect x="15" y="45" width="4" height="5" fill="${S}"/><rect x="45" y="45" width="4" height="5" fill="${S}"/>`},
+ {name:'F · Pine + sun', why:'A pine with a small warm sun behind it: clean energy and daylight. The one touch of yellow helps it stand out in the toolbar.',
+  svg:`<rect width="64" height="64" rx="15" fill="${G}"/><circle cx="44" cy="20" r="9" fill="${A}"/><path d="M28 11 L39 25 H34 L43 38 H36 L46 51 H10 L20 38 H13 L22 25 H17 Z" fill="${L}" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/><rect x="25" y="51" width="6" height="6" rx="1" fill="${S}"/>`},
+];
+const mk = (s, cls='') => `<svg class="${cls}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+document.getElementById('grid').innerHTML = logos.map(l => `<div class="card"><div class="row">${mk(l.svg,'big')}<div class="sizes">${mk(l.svg)}${mk(l.svg)}${mk(l.svg)}</div></div>
+<div class="bars"><div class="bar dark">${mk(l.svg)} dark</div><div class="bar light">${mk(l.svg)} light</div></div>
+<div class="word">${mk(l.svg)}evergreen<i>.</i></div>
+<h2>${l.name}</h2><p>${l.why}</p>${l.tag?`<span class="tag">${l.tag}</span>`:''}</div>`).join('');
+</script></body></html>
